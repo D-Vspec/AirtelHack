@@ -111,7 +111,8 @@ services:
   scoring:
     <<: *go-service
     build: { context: ./go, args: { SERVICE: scoring } }
-    environment: { <<: *go-env, PORT: "8087" }
+    environment: { <<: *go-env, PORT: "8087", SCORING_IMPORT_CSV: /data/smb_leads.csv }
+    volumes: ["./data/smb_leads.csv:/data/smb_leads.csv:ro"]
 
   advisor:
     build:

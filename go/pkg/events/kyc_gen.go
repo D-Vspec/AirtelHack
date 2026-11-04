@@ -3,64 +3,64 @@ package events
 
 // KYC finding codes and routes.
 const (
-	FindingDocMissing             = "DOC_MISSING"
-	FindingFieldMissing           = "FIELD_MISSING"
-	FindingImageBlurry            = "IMAGE_BLURRY"
-	FindingImageSkewed            = "IMAGE_SKEWED"
-	FindingOcrLowConfidence       = "OCR_LOW_CONFIDENCE"
-	FindingGstinChecksumInvalid   = "GSTIN_CHECKSUM_INVALID"
-	FindingGstinNotFound          = "GSTIN_NOT_FOUND"
-	FindingGstStatusCancelled     = "GST_STATUS_CANCELLED"
-	FindingGstStatusSuspended     = "GST_STATUS_SUSPENDED"
-	FindingUdyamNotFound          = "UDYAM_NOT_FOUND"
-	FindingNameMismatch           = "NAME_MISMATCH"
-	FindingAddressMismatch        = "ADDRESS_MISMATCH"
-	FindingDocStale               = "DOC_STALE"
-	FindingIdExpired              = "ID_EXPIRED"
+	FindingDocMissing = "DOC_MISSING"
+	FindingFieldMissing = "FIELD_MISSING"
+	FindingImageBlurry = "IMAGE_BLURRY"
+	FindingImageSkewed = "IMAGE_SKEWED"
+	FindingOcrLowConfidence = "OCR_LOW_CONFIDENCE"
+	FindingGstinChecksumInvalid = "GSTIN_CHECKSUM_INVALID"
+	FindingGstinNotFound = "GSTIN_NOT_FOUND"
+	FindingGstStatusCancelled = "GST_STATUS_CANCELLED"
+	FindingGstStatusSuspended = "GST_STATUS_SUSPENDED"
+	FindingUdyamNotFound = "UDYAM_NOT_FOUND"
+	FindingNameMismatch = "NAME_MISMATCH"
+	FindingAddressMismatch = "ADDRESS_MISMATCH"
+	FindingDocStale = "DOC_STALE"
+	FindingIdExpired = "ID_EXPIRED"
 	FindingSignatoryNotAuthorised = "SIGNATORY_NOT_AUTHORISED"
 )
 
 const (
-	RoutePass         = "pass"
-	RouteReupload     = "reupload"
+	RoutePass = "pass"
+	RouteReupload = "reupload"
 	RouteManualReview = "manual_review"
-	RouteReject       = "reject"
+	RouteReject = "reject"
 )
 
 // DefaultRoute maps a finding code to its default route.
 var DefaultRoute = map[string]string{
-	FindingDocMissing:             RouteReupload,
-	FindingFieldMissing:           RouteReupload,
-	FindingImageBlurry:            RouteReupload,
-	FindingImageSkewed:            RoutePass,
-	FindingOcrLowConfidence:       RouteReupload,
-	FindingGstinChecksumInvalid:   RouteManualReview,
-	FindingGstinNotFound:          RouteManualReview,
-	FindingGstStatusCancelled:     RouteReject,
-	FindingGstStatusSuspended:     RouteReject,
-	FindingUdyamNotFound:          RouteManualReview,
-	FindingNameMismatch:           RouteManualReview,
-	FindingAddressMismatch:        RouteManualReview,
-	FindingDocStale:               RouteReupload,
-	FindingIdExpired:              RouteReupload,
+	FindingDocMissing: RouteReupload,
+	FindingFieldMissing: RouteReupload,
+	FindingImageBlurry: RouteReupload,
+	FindingImageSkewed: RoutePass,
+	FindingOcrLowConfidence: RouteReupload,
+	FindingGstinChecksumInvalid: RouteManualReview,
+	FindingGstinNotFound: RouteManualReview,
+	FindingGstStatusCancelled: RouteReject,
+	FindingGstStatusSuspended: RouteReject,
+	FindingUdyamNotFound: RouteManualReview,
+	FindingNameMismatch: RouteManualReview,
+	FindingAddressMismatch: RouteManualReview,
+	FindingDocStale: RouteReupload,
+	FindingIdExpired: RouteReupload,
 	FindingSignatoryNotAuthorised: RouteManualReview,
 }
 
 // DefaultSeverity maps a finding code to its severity.
 var DefaultSeverity = map[string]string{
-	FindingDocMissing:             "error",
-	FindingFieldMissing:           "error",
-	FindingImageBlurry:            "error",
-	FindingImageSkewed:            "info",
-	FindingOcrLowConfidence:       "warning",
-	FindingGstinChecksumInvalid:   "error",
-	FindingGstinNotFound:          "error",
-	FindingGstStatusCancelled:     "error",
-	FindingGstStatusSuspended:     "error",
-	FindingUdyamNotFound:          "error",
-	FindingNameMismatch:           "error",
-	FindingAddressMismatch:        "error",
-	FindingDocStale:               "error",
-	FindingIdExpired:              "error",
+	FindingDocMissing: "error",
+	FindingFieldMissing: "error",
+	FindingImageBlurry: "error",
+	FindingImageSkewed: "info",
+	FindingOcrLowConfidence: "warning",
+	FindingGstinChecksumInvalid: "error",
+	FindingGstinNotFound: "error",
+	FindingGstStatusCancelled: "error",
+	FindingGstStatusSuspended: "error",
+	FindingUdyamNotFound: "error",
+	FindingNameMismatch: "error",
+	FindingAddressMismatch: "error",
+	FindingDocStale: "error",
+	FindingIdExpired: "error",
 	FindingSignatoryNotAuthorised: "error",
 }

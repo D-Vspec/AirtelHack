@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "udyam/scoring",
+  "title": "Scoring service HTTP shapes and event payloads",
+  "description": "scoring (8087, gateway /api/scoring). POST /score (Lead -> Score); GET /leads?limit=&source=live|case (-> {leads: ScoredLead[]}, highest probability first); GET /tasks?status=open|claimed|closed (-> {tasks: PartnerTask[]}, highest score first); POST /tasks/{id}/claim ({partner} -> PartnerTask); POST /tasks/{id}/close (-> PartnerTask). The service consumes lead.created and advisor.profile.updated (scores and re-scores live leads, emits lead.scored) and lead.unclosed (opens a partner task). With SCORING_IMPORT_CSV it also loads the case data's newest month (the model's test month, never trained on) as the demo pipeline. Model: ml/train.py -> go/pkg/scoring/model.json; card: docs/model-card.md. advisor: POST /handoff ({sessionId, reason}) emits lead.unclosed.",
+  "$defs": {
+    "Lead": {
+      "type": "object", "additionalProperties": false, "description": "Features known when a lead is created; unknown fields may be left out",
+      "properties": {
+        "leadSource": {"enum": ["Channel partner", "Field sales", "Inbound call", "Referral", "Website form", "WhatsApp campaign"]},
+        "segment": {"type": "string"}, "preferredLanguage": {"type": "string"}, "currentInternet": {"type": "string"}, "currentProvider": {"type": "string"},
+        "cityTier": {"type": "number"}, "employeeCount": {"type": "number"}, "numSites": {"type": "number"}, "annualTurnoverBand": {"type": "string"},
+        "hasGstin": {"type": "boolean"}, "hasUdyam": {"type": "boolean"}, "monthlyTelecomSpendInr": {"type": "number"},
+        "productsOfInterest": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "Reason": {"type": "object", "properties": {"field": {"type": "string"}, "value": {"type": "string"}, "effect": {"enum": ["raises", "lowers"]}, "contribution": {"type": "number", "description": "log-odds"}, "text": {"type": "string"}}},
+    "Score": {"type": "object", "required": ["probability", "band", "reasons", "model"], "properties": {"probability": {"type": "number"}, "band": {"enum": ["high", "medium", "low"]}, "reasons": {"type": "array", "items": {"$ref": "#/$defs/Reason"}}, "model": {"type": "string"}}},
+    "ScoredLead": {
+      "type": "object",
+      "properties": {"leadId": {"type": "string"}, "source": {"enum": ["live", "case"]}, "businessName": {"type": "string"}, "city": {"type": "string"}, "segment": {"type": "string"}, "leadSource": {"type": "string"},
+        "probability": {"type": "number"}, "band": {"type": "string"}, "reasons": {"type": "array", "items": {"$ref": "#/$defs/Reason"}}, "updatedAt": {"type": "string", "format": "date-time"}}
+    },
+    "PartnerTask": {
+      "type": "object",
+      "properties": {"id": {"type": "string"}, "leadId": {"type": "string"}, "reason": {"type": "string"}, "summary": {"type": "string"}, "transcript": {"type": "array", "items": {"type": "object", "properties": {"role": {"type": "string"}, "text": {"type": "string"}}}},
+        "probability": {"type": "number"}, "band": {"type": "string"}, "reasons": {"type": "array", "items": {"$ref": "#/$defs/Reason"}},
+        "status": {"enum": ["open", "claimed", "closed"]}, "partner": {"type": "string"}, "createdAt": {"type": "string", "format": "date-time"}}
+    },
+    "events": {
+      "lead.unclosed": {"type": "object", "properties": {"sessionId": {"type": "string"}, "leadId": {"type": "string"}, "reason": {"type": "string"}, "summary": {"type": "string"}, "profile": {"type": "object"}, "transcript": {"type": "array"}}},
+      "lead.scored": {"type": "object", "properties": {"leadId": {"type": "string"}, "probability": {"type": "number"}, "band": {"type": "string"}, "reasons": {"type": "array"}, "model": {"type": "string"}}}
+    }
+  }
+}

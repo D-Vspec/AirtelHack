@@ -5,6 +5,7 @@ import { newSession, runTurn, type SessionState } from "./advisor.ts";
 import { kafkaEmitter } from "./events.ts";
 import { advisorLlm, createChatModel } from "./llm.ts";
 import { httpServices } from "./services.ts";
+import { HANDOFF_REASONS, handoffSummary, type HandoffReason } from "./handoff.ts";
 
 const app = Fastify({ logger: { level: process.env.LOG_LEVEL ?? "info" } });
 const services = httpServices();
@@ -42,6 +43,24 @@ app.post<{ Body: { sessionId?: string; leadId?: string; message?: string } }>("/
     sessionId: state.sessionId, leadId: state.leadId, turn: state.turn, reply: r.reply, kind: r.brief.kind,
     language: state.language, romanised: state.romanised, profile: state.profile, quote: state.quote ?? null,
   };
+});
+
+// Hand the lead to a partner (scenario 21): emits lead.unclosed with a deterministic summary and
+// the transcript; the scoring service opens a partner task ranked by the lead's score.
+app.post<{ Body: { sessionId: string; reason?: HandoffReason } }>("/handoff", {
+  schema: {
+    body: {
+      type: "object", required: ["sessionId"], additionalProperties: false,
+      properties: { sessionId: { type: "string", maxLength: 64 }, reason: { type: "string", enum: [...HANDOFF_REASONS] } },
+    },
+  },
+}, async (req, reply) => {
+  const s = sessions.get(req.body.sessionId);
+  if (!s) { reply.code(404); return { code: "SESSION_NOT_FOUND", message: "no such advisor session" }; }
+  const reason = req.body.reason ?? "owner_asked_for_person";
+  const summary = handoffSummary(s, reason);
+  await emit(TOPICS.LEAD_UNCLOSED, s.leadId, { sessionId: s.sessionId, leadId: s.leadId, reason, summary, profile: s.profile, transcript: s.history.slice(-12) });
+  return { leadId: s.leadId, reason, summary };
 });
 
 app.get<{ Params: { id: string } }>("/sessions/:id", async (req, reply) => {

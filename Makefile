@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 SVC ?=
 PHASE ?=
-.PHONY: help setup deps contracts up down logs ps seed smoke test typecheck package packs data-dictionary clean kyc-test kyc-record integration web web-e2e mobile-e2e
+.PHONY: help setup deps contracts up down logs ps seed smoke test typecheck package packs data-dictionary clean kyc-test kyc-record integration web web-e2e mobile-e2e model
 
 help: ## list targets
 	@grep -E '^[a-z-]+:.*##' Makefile | sed 's/:.*##/\t/' | column -t -s $$'\t'
@@ -64,6 +64,11 @@ web-e2e: ## demo path in a real browser (Edge/Chrome), phone + desktop; screensh
 mobile-e2e: ## the Expo app's journey on its web build at phone size; screenshots to docs/screens
 	cd ts/apps/mobile && npx expo export --platform web --output-dir dist-web
 	cd ts/apps/web && MOBILE_DIR=../mobile/dist-web node scripts/e2e-mobile.mjs
+
+model: ## retrain the lead propensity model (ml/train.py) and check Go/Python parity
+	test -d ml/.venv || (python3 -m venv ml/.venv && ml/.venv/bin/pip install --no-cache-dir -r ml/requirements.txt)
+	(ml/.venv/bin/python ml/train.py 2>/dev/null || ml/.venv/Scripts/python ml/train.py)
+	cd go && go test ./pkg/scoring
 
 typecheck: ## TypeScript typecheck for every package
 	cd ts && pnpm typecheck

@@ -3,6 +3,7 @@ import type { Eligibility, Product, Quote } from "./advisor";
 import type { Consent, ConsentRequest, KycApplication, KycReview, Prefill, ReviewDecision, UploadResult, Withdrawal } from "./kyc";
 import type { KycDocumentType } from "./kyc-findings";
 import type { Order, ResumeState, SentMessage, Timeline, Transition } from "./orders";
+import type { HandoffReason, LeadScore, PartnerTask, ScoredLead } from "./scoring";
 
 /** A non-2xx answer from the gateway. `body` is the service's error JSON ({code, message}) when there is one. */
 export class ApiError extends Error {
@@ -78,6 +79,16 @@ export function createApiClient(baseUrl: string) {
 
     advisor: {
       chat: (body: { message: string; sessionId?: string; leadId?: string }) => request<ChatResponse>("/advisor/chat", json("POST", body)),
+      handoff: (sessionId: string, reason?: HandoffReason) =>
+        request<{ leadId: string; reason: HandoffReason; summary: string }>("/advisor/handoff", json("POST", { sessionId, ...(reason ? { reason } : {}) })),
+    },
+    scoring: {
+      score: (lead: Record<string, unknown>) => request<LeadScore>("/scoring/score", json("POST", lead)),
+      leads: (params: { source?: "live" | "case"; limit?: number } = {}) =>
+        request<{ leads: ScoredLead[] }>(`/scoring/leads${q({ source: params.source, limit: params.limit?.toString() })}`),
+      tasks: (status?: "open" | "claimed" | "closed") => request<{ tasks: PartnerTask[] }>(`/scoring/tasks${q({ status })}`),
+      claim: (id: string, partner: string) => request<PartnerTask>(`/scoring/tasks/${encodeURIComponent(id)}/claim`, json("POST", { partner })),
+      close: (id: string) => request<PartnerTask>(`/scoring/tasks/${encodeURIComponent(id)}/close`, json("POST")),
     },
     rules: {
       products: () => request<Product[]>("/rules/products"),

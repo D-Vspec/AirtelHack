@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import type { AdvisorExtraction } from "@udyam/shared";
 import { ACCESS_LINKS, newSession, runTurn, type Brief, type Llm } from "./advisor.ts";
 import { checkReply, dominantScript, numbersIn } from "./guard.ts";
+import { handoffSummary } from "./handoff.ts";
 import { httpServices } from "./services.ts";
 
 test("numbersIn reads Indian grouping and native digits", () => {
@@ -141,4 +142,13 @@ test("romanised comes from the message script, not the extractor", { skip: !live
   assert.equal(s.romanised, false);
   await runTurn(s, "vanakkam, chennai-la clinic", { llm, services, emit });
   assert.equal(s.romanised, true);
+});
+
+test("handoff summary states only captured facts", () => {
+  const s = newSession("t-handoff", "lead-h");
+  s.profile = { businessType: "Dental clinic", city: "Pune", cityTier: 1, employeeCount: 6, numSites: 1, hasGstin: true };
+  s.turn = 3;
+  const sum = handoffSummary(s, "custom_request");
+  assert.equal(sum, "Dental clinic, in Pune (Tier 1), 6 staff, 1 site, GSTIN: yes. Language: English. No quote yet. Custom request the catalogue does not cover. 3 turn(s).");
+  assert.match(handoffSummary(newSession("t-empty"), "owner_asked_for_person"), /^Profile not captured yet\./);
 });

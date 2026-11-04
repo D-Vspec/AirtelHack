@@ -20,6 +20,7 @@ export default function ChatPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [quote, setQuote] = useState<Quote | null>(null);
+  const [handedOff, setHandedOff] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
 
   // demo owners start with their scenario message ready to send
@@ -62,6 +63,19 @@ export default function ChatPage() {
     }
   }
 
+  async function handoff() {
+    if (!j.sessionId) return;
+    setBusy(true);
+    try {
+      await api.advisor.handoff(j.sessionId, "owner_asked_for_person");
+      setHandedOff(true);
+    } catch (e) {
+      setError(errorText(e, t("error")));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   const chips = (CHIPS[j.lang] ?? CHIPS.en)!;
   const chipSet = quote ? chips.offer : chips.ask;
 
@@ -80,6 +94,7 @@ export default function ChatPage() {
           </ol>
           <div ref={endRef} />
           {error && <div className="mt-3"><Alert tone="error">{error}</Alert></div>}
+          {handedOff && <div className="mt-3" data-testid="handoff-done"><Alert tone="success">{t("handoffDone")}</Alert></div>}
 
           <div className="mt-4 flex flex-wrap gap-2" aria-label="quick replies">
             {chipSet.map((c) => (
@@ -88,6 +103,11 @@ export default function ChatPage() {
               </button>
             ))}
           </div>
+          {j.sessionId && !handedOff && (
+            <button data-testid="talk-to-person" onClick={handoff} disabled={busy} className="mt-3 self-start text-sm text-brand-700 underline disabled:opacity-50">
+              {t("talkToPerson")}
+            </button>
+          )}
           <form className="mt-3 flex gap-2" onSubmit={(e) => { e.preventDefault(); void send(input); }}>
             <label className="sr-only" htmlFor="msg">{t("chatPlaceholder")}</label>
             <textarea

@@ -1,0 +1,1070 @@
+[
+ {
+  "lead": {
+   "leadSource": "Referral",
+   "segment": "Micro retail & services",
+   "preferredLanguage": "Hindi",
+   "currentInternet": "Home broadband",
+   "currentProvider": "Accel (mobile only)",
+   "cityTier": 2,
+   "employeeCount": 3,
+   "numSites": 1,
+   "annualTurnoverBand": "< 40 lakh",
+   "hasGstin": false,
+   "hasUdyam": false,
+   "monthlyTelecomSpendInr": 200.0,
+   "productsOfInterest": [
+    "P01"
+   ]
+  },
+  "probability": 0.023785632103681564
+ },
+ {
+  "lead": {
+   "leadSource": "Channel partner",
+   "segment": "Micro retail & services",
+   "preferredLanguage": "Hindi",
+   "currentInternet": "None",
+   "currentProvider": "None",
+   "cityTier": 1,
+   "employeeCount": 3,
+   "numSites": 1,
+   "annualTurnoverBand": "< 40 lakh",
+   "hasGstin": false,
+   "hasUdyam": false,
+   "monthlyTelecomSpendInr": 800.0,
+   "productsOfInterest": [
+    "P04"
+   ]
+  },
+  "probability": 0.009622030891478062
+ },
+ {
+  "lead": {
+   "leadSource": "Field sales",
+   "segment": "Professional offices",
+   "preferredLanguage": "Kannada",
+   "currentInternet": "Home broadband",
+   "currentProvider": "Competitor B",
+   "cityTier": 1,
+   "employeeCount": 7,
+   "numSites": 1,
+   "annualTurnoverBand": "1.5 - 5 cr",
+   "hasGstin": true,
+   "hasUdyam": true,
+   "monthlyTelecomSpendInr": 2350.0,
+   "productsOfInterest": [
+    "P04",
+    "P13",
+    "P16"
+   ]
+  },
+  "probability": 0.13609401881694794
+ },
+ {
+  "lead": {
+   "leadSource": "Field sales",
+   "segment": "Small multi-site businesses",
+   "preferredLanguage": "English",
+   "currentInternet": "Business broadband",
+   "currentProvider": "Competitor A",
+   "cityTier": 2,
+   "employeeCount": 45,
+   "numSites": 8,
+   "annualTurnoverBand": "5 - 25 cr",
+   "hasGstin": true,
+   "hasUdyam": true,
+   "monthlyTelecomSpendInr": 6850.0,
+   "productsOfInterest": [
+    "P16"
+   ]
+  },
+  "probability": 0.1201406717300415
+ },
+ {
+  "lead": {
+   "leadSource": "Field sales",
+   "segment": "Small multi-site businesses",
+   "preferredLanguage": "Marathi",
+   "currentInternet": "Business broadband",
+   "currentProvider": "Competitor B",
+   "cityTier": 1,
+   "employeeCount": 80,
+   "numSites": 6,
+   "annualTurnoverBand": "5 - 25 cr",
+   "hasGstin": true,
+   "hasUdyam": true,
+   "monthlyTelecomSpendInr": 11350.0,
+   "productsOfInterest": [
+    "P08",
+    "P16"
+   ]
+  },
+  "probability": 0.0883842185139656
+ },
+ {
+  "lead": {
+   "leadSource": "Field sales",
+   "segment": "Micro retail & services",
+   "preferredLanguage": "English",
+   "currentInternet": "Mobile hotspot",
+   "currentProvider": "Competitor A",
+   "cityTier": 1,
+   "employeeCount": 2,
+   "numSites": 1,
+   "annualTurnoverBand": "40 lakh - 1.5 cr",
+   "hasGstin": true,
+   "hasUdyam": false,
+   "monthlyTelecomSpendInr": 900.0,
+   "productsOfInterest": [
+    "P04",
+    "P19",
+    "P22"
+   ]
+  },
+  "probability": 0.052188679575920105
+ },
+ {
+  "lead": {
+   "leadSource": "Referral",
+   "segment": "Micro retail & services",
+   "preferredLanguage": "English",
+   "currentInternet": "Mobile hotspot",
+   "currentProvider": "Accel (mobile only)",
+   "cityTier": 1,
+   "employeeCount": 2,
+   "numSites": 1,
+   "annualTurnoverBand": "40 lakh - 1.5 cr",
+   "hasGstin": true,
+   "hasUdyam": false,
+   "monthlyTelecomSpendInr": 300.0,
+   "productsOfInterest": [
+    "P19",
+    "P22"
+   ]
+  },
+  "probability": 0.10777273029088974
+ },
+ {
+  "lead": {
+   "leadSource": "Field sales",
+   "segment": "Professional offices",
+   "preferredLanguage": "Hindi",
+   "currentInternet": "Mobile hotspot",
+   "currentProvider": "Accel (mobile only)",
+   "cityTier": 1,
+   "employeeCount": 6,
+   "numSites": 2,
+   "annualTurnoverBand": "40 lakh - 1.5 cr",
+   "hasGstin": true,
+   "hasUdyam": false,
+   "monthlyTelecomSpendInr": 1350.0,
+   "productsOfInterest": [
+    "P04"
+   ]
+  },
+  "probability": 0.11946820467710495
+ },
+ {
+  "lead": {
+   "leadSource": "Field sales",
+   "segment": "Professional offices",
+   "preferredLanguage": "Hindi",
+   "currentInternet": "Business broadband",
+   "currentProvider": "Accel (mobile only)",
+   "cityTier": 2,
+   "employeeCount": 23,
+   "numSites": 1,
+   "annualTurnoverBand": "40 lakh - 1.5 cr",
+   "hasGstin": true,
+   "hasUdyam": true,
+   "monthlyTelecomSpendInr": 3450.0,
+   "productsOfInterest": [
+    "P15",
+    "P17",
+    "P20"
+   ]
+  },
+  "probability": 0.14949946105480194
+ },
+ {
+  "lead": {
+   "leadSource": "Referral",
+   "segment": "Small multi-site businesses",
+   "preferredLanguage": "Marathi",
+   "currentInternet": "Business broadband",
+   "currentProvider": "Competitor A",
+   "cityTier": 2,
+   "employeeCount": 117,
+   "numSites": 7,
+   "annualTurnoverBand": "5 - 25 cr",
+   "hasGstin": true,
+   "hasUdyam": true,
+   "monthlyTelecomSpendInr": 7850.0,
+   "productsOfInterest": [
+    "P10",
+    "P20",
+    "P22"
+   ]
+  },
+  "probability": 0.12308015674352646
+ },
+ {
+  "lead": {
+   "leadSource": "Channel partner",
+   "segment": "Micro retail & services",
+   "preferredLanguage": "English",
+   "currentInternet": "Home broadband",
+   "currentProvider": "Competitor A",
+   "cityTier": 1,
+   "employeeCount": 5,
+   "numSites": 1,
+   "annualTurnoverBand": "< 40 lakh",
+   "hasGstin": false,
+   "hasUdyam": true,
+   "monthlyTelecomSpendInr": 1000.0,
+   "productsOfInterest": [
+    "P07",
+    "P15"
+   ]
+  },
+  "probability": 0.017178302630782127
+ },
+ {
+  "lead": {
+   "leadSource": "Referral",
+   "segment": "Professional offices",
+   "preferredLanguage": "Telugu",
+   "currentInternet": "Business broadband",
+   "currentProvider": "Accel (mobile only)",
+   "cityTier": 2,
+   "employeeCount": 4,
+   "numSites": 1,
+   "annualTurnoverBand": "5 - 25 cr",
+   "hasGstin": true,
+   "hasUdyam": false,
+   "monthlyTelecomSpendInr": 3050.0,
+   "productsOfInterest": [
+    "P11"
+   ]
+  },
+  "probability": 0.17093178629875183
+ },
+ {
+  "lead": {
+   "leadSource": "Field sales",
+   "segment": "Micro retail & services",
+   "preferredLanguage": "Bengali",
+   "currentInternet": "Home broadband",
+   "currentProvider": "Competitor B",
+   "cityTier": 1,
+   "employeeCount": 6,
+   "numSites": 1,
+   "annualTurnoverBand": "< 40 lakh",
+   "hasGstin": true,
+   "hasUdyam": false,
+   "monthlyTelecomSpendInr": 750.0,
+   "productsOfInterest": [
+    "P14",
+    "P22"
+   ]
+  },
+  "probability": 0.0542350672185421
+ },
+ {
+  "lead": {
+   "leadSource": "Channel partner",
+   "segment": "Micro retail & services",
+   "preferredLanguage": "Hindi",
+   "currentInternet": "Business broadband",
+   "currentProvider": "Competitor A",
+   "cityTier": 2,
+   "employeeCount": 3,
+   "numSites": 1,
+   "annualTurnoverBand": "< 40 lakh",
+   "hasGstin": true,
+   "hasUdyam": false,
+   "monthlyTelecomSpendInr": 1200.0,
+   "productsOfInterest": [
+    "P01",
+    "P04",
+    "P07"
+   ]
+  },
+  "probability": 0.04597841203212738
+ },
+ {
+  "lead": {
+   "leadSource": "Channel partner",
+   "segment": "Micro retail & services",
+   "preferredLanguage": "Hindi",
+   "currentInternet": "Mobile hotspot",
+   "currentProvider": "Competitor A",
+   "cityTier": 2,
+   "employeeCount": 6,
+   "numSites": 1,
+   "annualTurnoverBand": "40 lakh - 1.5 cr",
+   "hasGstin": false,
+   "hasUdyam": true,
+   "monthlyTelecomSpendInr": 250.0,
+   "productsOfInterest": [
+    "P15"
+   ]
+  },
+  "probability": 0.019699497148394585
+ },
+ {
+  "lead": {
+   "leadSource": "Website form",
+   "segment": "Micro retail & services",
+   "preferredLanguage": "Hindi",
+   "currentInternet": "Mobile hotspot",
+   "currentProvider": "Accel (mobile only)",
+   "cityTier": 1,
+   "employeeCount": 3,
+   "numSites": 1,
+   "annualTurnoverBand": "< 40 lakh",
+   "hasGstin": false,
+   "hasUdyam": false,
+   "monthlyTelecomSpendInr": 1050.0,
+   "productsOfInterest": [
+    "P14",
+    "P22",
+    "P23"
+   ]
+  },
+  "probability": 0.011103734374046326
+ },
+ {
+  "lead": {
+   "leadSource": "Field sales",
+   "segment": "Professional offices",
+   "preferredLanguage": "Kannada",
+   "currentInternet": "Business broadband",
+   "currentProvider": "Accel",
+   "cityTier": 1,
+   "employeeCount": 11,
+   "numSites": 1,
+   "annualTurnoverBand": "5 - 25 cr",
+   "hasGstin": true,
+   "hasUdyam": true,
+   "monthlyTelecomSpendInr": 1800.0,
+   "productsOfInterest": [
+    "P15",
+    "P22"
+   ]
+  },
+  "probability": 0.17199981212615967
+ },
+ {
+  "lead": {
+   "leadSource": "Field sales",
+   "segment": "Micro retail & services",
+   "preferredLanguage": "English",
+   "currentInternet": "Mobile hotspot",
+   "currentProvider": "Local ISP",
+   "cityTier": 1,
+   "employeeCount": 1,
+   "numSites": 1,
+   "annualTurnoverBand": "< 40 lakh",
+   "hasGstin": false,
+   "hasUdyam": true,
+   "monthlyTelecomSpendInr": 1100.0,
+   "productsOfInterest": [
+    "P01"
+   ]
+  },
+  "probability": 0.014309482648968697
+ },
+ {
+  "lead": {
+   "leadSource": "Field sales",
+   "segment": "Small multi-site businesses",
+   "preferredLanguage": "Gujarati",
+   "currentInternet": "Business broadband",
+   "currentProvider": "Local ISP",
+   "cityTier": 2,
+   "employeeCount": 70,
+   "numSites": 12,
+   "annualTurnoverBand": "25 - 100 cr",
+   "hasGstin": true,
+   "hasUdyam": true,
+   "monthlyTelecomSpendInr": 9150.0,
+   "productsOfInterest": [
+    "P13",
+    "P14"
+   ]
+  },
+  "probability": 0.08944448083639145
+ },
+ {
+  "lead": {
+   "leadSource": "Inbound call",
+   "segment": "Micro retail & services",
+   "preferredLanguage": "Telugu",
+   "currentInternet": "Mobile hotspot",
+   "currentProvider": "Competitor B",
+   "cityTier": 1,
+   "employeeCount": 1,
+   "numSites": 1,
+   "annualTurnoverBand": "40 lakh - 1.5 cr",
+   "hasGstin": true,
+   "hasUdyam": true,
+   "monthlyTelecomSpendInr": 400.0,
+   "productsOfInterest": [
+    "P07",
+    "P15",
+    "P18"
+   ]
+  },
+  "probability": 0.10727328807115555
+ },
+ {
+  "lead": {
+   "leadSource": "Referral",
+   "segment": "Professional offices",
+   "preferredLanguage": "Hindi",
+   "currentInternet": "Home broadband",
+   "currentProvider": "Accel",
+   "cityTier": 1,
+   "employeeCount": 7,
+   "numSites": 1,
+   "annualTurnoverBand": "40 lakh - 1.5 cr",
+   "hasGstin": true,
+   "hasUdyam": true,
+   "monthlyTelecomSpendInr": 2150.0,
+   "productsOfInterest": [
+    "P08"
+   ]
+  },
+  "probability": 0.18629181385040283
+ },
+ {
+  "lead": {
+   "leadSource": "Website form",
+   "segment": "Small multi-site businesses",
+   "preferredLanguage": "Kannada",
+   "currentInternet": "Business broadband",
+   "currentProvider": "Local ISP",
+   "cityTier": 1,
+   "employeeCount": 31,
+   "numSites": 9,
+   "annualTurnoverBand": "5 - 25 cr",
+   "hasGstin": true,
+   "hasUdyam": true,
+   "monthlyTelecomSpendInr": 10650.0,
+   "productsOfInterest": [
+    "P10",
+    "P14",
+    "P25"
+   ]
+  },
+  "probability": 0.07166444510221481
+ },
+ {
+  "lead": {
+   "leadSource": "WhatsApp campaign",
+   "segment": "Professional offices",
+   "preferredLanguage": "English",
+   "currentInternet": "Business broadband",
+   "currentProvider": "Competitor A",
+   "cityTier": 1,
+   "employeeCount": 6,
+   "numSites": 2,
+   "annualTurnoverBand": "1.5 - 5 cr",
+   "hasGstin": true,
+   "hasUdyam": true,
+   "monthlyTelecomSpendInr": 3550.0,
+   "productsOfInterest": [
+    "P12"
+   ]
+  },
+  "probability": 0.05855623632669449
+ },
+ {
+  "lead": {
+   "leadSource": "Field sales",
+   "segment": "Micro retail & services",
+   "preferredLanguage": "Hindi",
+   "currentInternet": "Mobile hotspot",
+   "currentProvider": "Competitor A",
+   "cityTier": 2,
+   "employeeCount": 3,
+   "numSites": 1,
+   "annualTurnoverBand": "40 lakh - 1.5 cr",
+   "hasGstin": true,
+   "hasUdyam": false,
+   "monthlyTelecomSpendInr": 1750.0,
+   "productsOfInterest": [
+    "P04",
+    "P15"
+   ]
+  },
+  "probability": 0.058139100670814514
+ },
+ {
+  "lead": {
+   "leadSource": "Website form",
+   "segment": "Small manufacturers",
+   "preferredLanguage": "Marathi",
+   "currentInternet": "Leased line",
+   "currentProvider": "Accel (mobile only)",
+   "cityTier": 1,
+   "employeeCount": 117,
+   "numSites": 2,
+   "annualTurnoverBand": "5 - 25 cr",
+   "hasGstin": true,
+   "hasUdyam": true,
+   "monthlyTelecomSpendInr": 21750.0,
+   "productsOfInterest": [
+    "P11",
+    "P25"
+   ]
+  },
+  "probability": 0.07164355367422104
+ },
+ {
+  "lead": {
+   "leadSource": "Referral",
+   "segment": "Professional offices",
+   "preferredLanguage": "Hindi",
+   "currentInternet": "Business broadband",
+   "currentProvider": "Local ISP",
+   "cityTier": 1,
+   "employeeCount": 4,
+   "numSites": 2,
+   "annualTurnoverBand": "5 - 25 cr",
+   "hasGstin": true,
+   "hasUdyam": false,
+   "monthlyTelecomSpendInr": 2400.0,
+   "productsOfInterest": [
+    "P13",
+    "P20"
+   ]
+  },
+  "probability": 0.13961954414844513
+ },
+ {
+  "lead": {
+   "leadSource": "WhatsApp campaign",
+   "segment": "Professional offices",
+   "preferredLanguage": "Hindi",
+   "currentInternet": "Home broadband",
+   "currentProvider": "Accel (mobile only)",
+   "cityTier": 2,
+   "employeeCount": 17,
+   "numSites": 1,
+   "annualTurnoverBand": "40 lakh - 1.5 cr",
+   "hasGstin": true,
+   "hasUdyam": true,
+   "monthlyTelecomSpendInr": 2750.0,
+   "productsOfInterest": [
+    "P12",
+    "P18"
+   ]
+  },
+  "probability": 0.06714887917041779
+ },
+ {
+  "lead": {
+   "leadSource": "Field sales",
+   "segment": "Micro retail & services",
+   "preferredLanguage": "Hindi",
+   "currentInternet": "Mobile hotspot",
+   "currentProvider": "Competitor B",
+   "cityTier": 1,
+   "employeeCount": 5,
+   "numSites": 1,
+   "annualTurnoverBand": "< 40 lakh",
+   "hasGstin": false,
+   "hasUdyam": true,
+   "monthlyTelecomSpendInr": 1450.0,
+   "productsOfInterest": [
+    "P18",
+    "P22"
+   ]
+  },
+  "probability": 0.03124990314245224
+ },
+ {
+  "lead": {
+   "leadSource": "Field sales",
+   "segment": "Micro retail & services",
+   "preferredLanguage": "Hindi",
+   "currentInternet": "Mobile hotspot",
+   "currentProvider": "Competitor A",
+   "cityTier": 2,
+   "employeeCount": 3,
+   "numSites": 1,
+   "annualTurnoverBand": "< 40 lakh",
+   "hasGstin": false,
+   "hasUdyam": true,
+   "monthlyTelecomSpendInr": 1050.0,
+   "productsOfInterest": [
+    "P07",
+    "P15",
+    "P18"
+   ]
+  },
+  "probability": 0.019137699156999588
+ },
+ {
+  "lead": {
+   "leadSource": "Website form",
+   "segment": "Small manufacturers",
+   "preferredLanguage": "English",
+   "currentInternet": "Business broadband",
+   "currentProvider": "Local ISP",
+   "cityTier": 1,
+   "employeeCount": 115,
+   "numSites": 1,
+   "annualTurnoverBand": "5 - 25 cr",
+   "hasGstin": true,
+   "hasUdyam": true,
+   "monthlyTelecomSpendInr": 10950.0,
+   "productsOfInterest": [
+    "P23"
+   ]
+  },
+  "probability": 0.07504633814096451
+ },
+ {
+  "lead": {
+   "leadSource": "Field sales",
+   "segment": "Micro retail & services",
+   "preferredLanguage": "Hindi",
+   "currentInternet": "Mobile hotspot",
+   "currentProvider": "Local ISP",
+   "cityTier": 1,
+   "employeeCount": 4,
+   "numSites": 1,
+   "annualTurnoverBand": "40 lakh - 1.5 cr",
+   "hasGstin": true,
+   "hasUdyam": false,
+   "monthlyTelecomSpendInr": 1150.0,
+   "productsOfInterest": [
+    "P19"
+   ]
+  },
+  "probability": 0.06663484871387482
+ },
+ {
+  "lead": {
+   "leadSource": "Website form",
+   "segment": "Micro retail & services",
+   "preferredLanguage": "Marathi",
+   "currentInternet": "Mobile hotspot",
+   "currentProvider": "Local ISP",
+   "cityTier": 1,
+   "employeeCount": 1,
+   "numSites": 1,
+   "annualTurnoverBand": "1.5 - 5 cr",
+   "hasGstin": false,
+   "hasUdyam": false,
+   "monthlyTelecomSpendInr": 900.0,
+   "productsOfInterest": [
+    "P07"
+   ]
+  },
+  "probability": 0.008353921584784985
+ },
+ {
+  "lead": {
+   "leadSource": "Inbound call",
+   "segment": "Micro retail & services",
+   "preferredLanguage": "Gujarati",
+   "currentInternet": "Mobile hotspot",
+   "currentProvider": "Competitor A",
+   "cityTier": 2,
+   "employeeCount": 1,
+   "numSites": 1,
+   "annualTurnoverBand": "40 lakh - 1.5 cr",
+   "hasGstin": true,
+   "hasUdyam": false,
+   "monthlyTelecomSpendInr": 1300.0,
+   "productsOfInterest": [
+    "P01",
+    "P04"
+   ]
+  },
+  "probability": 0.04836215823888779
+ },
+ {
+  "lead": {
+   "leadSource": "Inbound call",
+   "segment": "Micro retail & services",
+   "preferredLanguage": "Hindi",
+   "currentInternet": "Home broadband",
+   "currentProvider": "Accel (mobile only)",
+   "cityTier": 2,
+   "employeeCount": 5,
+   "numSites": 1,
+   "annualTurnoverBand": "< 40 lakh",
+   "hasGstin": true,
+   "hasUdyam": false,
+   "monthlyTelecomSpendInr": 800.0,
+   "productsOfInterest": [
+    "P19",
+    "P22"
+   ]
+  },
+  "probability": 0.03294497728347778
+ },
+ {
+  "lead": {
+   "leadSource": "Field sales",
+   "segment": "Micro retail & services",
+   "preferredLanguage": "Hindi",
+   "currentInternet": "Business broadband",
+   "currentProvider": "Competitor A",
+   "cityTier": 2,
+   "employeeCount": 3,
+   "numSites": 1,
+   "annualTurnoverBand": "40 lakh - 1.5 cr",
+   "hasGstin": true,
+   "hasUdyam": true,
+   "monthlyTelecomSpendInr": 1550.0,
+   "productsOfInterest": [
+    "P14"
+   ]
+  },
+  "probability": 0.07592712342739105
+ },
+ {
+  "lead": {
+   "leadSource": "Inbound call",
+   "segment": "Small multi-site businesses",
+   "preferredLanguage": "English",
+   "currentInternet": "Business broadband",
+   "currentProvider": "Accel (mobile only)",
+   "cityTier": 2,
+   "employeeCount": 91,
+   "numSites": 8,
+   "annualTurnoverBand": "1.5 - 5 cr",
+   "hasGstin": true,
+   "hasUdyam": true,
+   "monthlyTelecomSpendInr": 8600.0,
+   "productsOfInterest": [
+    "P07",
+    "P08",
+    "P13"
+   ]
+  },
+  "probability": 0.09322384744882584
+ },
+ {
+  "lead": {
+   "leadSource": "Channel partner",
+   "segment": "Professional offices",
+   "preferredLanguage": "Telugu",
+   "currentInternet": "Home broadband",
+   "currentProvider": "Local ISP",
+   "cityTier": 1,
+   "employeeCount": 8,
+   "numSites": 1,
+   "annualTurnoverBand": "1.5 - 5 cr",
+   "hasGstin": false,
+   "hasUdyam": true,
+   "monthlyTelecomSpendInr": 3000.0,
+   "productsOfInterest": [
+    "P03",
+    "P14"
+   ]
+  },
+  "probability": 0.026768896728754044
+ },
+ {
+  "lead": {
+   "leadSource": "Channel partner",
+   "segment": "Professional offices",
+   "preferredLanguage": "Hindi",
+   "currentInternet": "Home broadband",
+   "currentProvider": "Accel (mobile only)",
+   "cityTier": 1,
+   "employeeCount": 24,
+   "numSites": 1,
+   "annualTurnoverBand": "40 lakh - 1.5 cr",
+   "hasGstin": true,
+   "hasUdyam": true,
+   "monthlyTelecomSpendInr": 1950.0,
+   "productsOfInterest": [
+    "P01"
+   ]
+  },
+  "probability": 0.15452904999256134
+ },
+ {
+  "lead": {
+   "leadSource": "WhatsApp campaign",
+   "segment": "Micro retail & services",
+   "preferredLanguage": "Marathi",
+   "currentInternet": "Mobile hotspot",
+   "currentProvider": "Accel (mobile only)",
+   "cityTier": 1,
+   "employeeCount": 1,
+   "numSites": 1,
+   "annualTurnoverBand": "< 40 lakh",
+   "hasGstin": true,
+   "hasUdyam": false,
+   "monthlyTelecomSpendInr": 750.0,
+   "productsOfInterest": [
+    "P18",
+    "P22"
+   ]
+  },
+  "probability": 0.017514405772089958
+ },
+ {
+  "lead": {
+   "leadSource": "Website form",
+   "segment": "Small multi-site businesses",
+   "preferredLanguage": "Hindi",
+   "currentInternet": "Business broadband",
+   "currentProvider": "Local ISP",
+   "cityTier": 2,
+   "employeeCount": 83,
+   "numSites": 4,
+   "annualTurnoverBand": "5 - 25 cr",
+   "hasGstin": true,
+   "hasUdyam": true,
+   "monthlyTelecomSpendInr": 6750.0,
+   "productsOfInterest": [
+    "P08",
+    "P12"
+   ]
+  },
+  "probability": 0.04944915696978569
+ },
+ {
+  "lead": {
+   "leadSource": "Inbound call",
+   "segment": "Micro retail & services",
+   "preferredLanguage": "English",
+   "currentInternet": "Home broadband",
+   "currentProvider": "Competitor A",
+   "cityTier": 2,
+   "employeeCount": 6,
+   "numSites": 1,
+   "annualTurnoverBand": "40 lakh - 1.5 cr",
+   "hasGstin": true,
+   "hasUdyam": false,
+   "monthlyTelecomSpendInr": 900.0,
+   "productsOfInterest": [
+    "P07",
+    "P22"
+   ]
+  },
+  "probability": 0.047171737998723984
+ },
+ {
+  "lead": {
+   "leadSource": "Channel partner",
+   "segment": "Micro retail & services",
+   "preferredLanguage": "Hindi",
+   "currentInternet": "Business broadband",
+   "currentProvider": "Local ISP",
+   "cityTier": 2,
+   "employeeCount": 3,
+   "numSites": 1,
+   "annualTurnoverBand": "< 40 lakh",
+   "hasGstin": false,
+   "hasUdyam": true,
+   "monthlyTelecomSpendInr": 1650.0,
+   "productsOfInterest": [
+    "P01",
+    "P07",
+    "P19"
+   ]
+  },
+  "probability": 0.011291086673736572
+ },
+ {
+  "lead": {
+   "leadSource": "Field sales",
+   "segment": "Micro retail & services",
+   "preferredLanguage": "English",
+   "currentInternet": "Mobile hotspot",
+   "currentProvider": "Competitor B",
+   "cityTier": 1,
+   "employeeCount": 1,
+   "numSites": 1,
+   "annualTurnoverBand": "< 40 lakh",
+   "hasGstin": true,
+   "hasUdyam": false,
+   "monthlyTelecomSpendInr": 1050.0,
+   "productsOfInterest": [
+    "P01",
+    "P07",
+    "P18"
+   ]
+  },
+  "probability": 0.06693663448095322
+ },
+ {
+  "lead": {
+   "leadSource": "Channel partner",
+   "segment": "Micro retail & services",
+   "preferredLanguage": "Hindi",
+   "currentInternet": "Home broadband",
+   "currentProvider": "Local ISP",
+   "cityTier": 1,
+   "employeeCount": 2,
+   "numSites": 1,
+   "annualTurnoverBand": "1.5 - 5 cr",
+   "hasGstin": false,
+   "hasUdyam": false,
+   "monthlyTelecomSpendInr": 1050.0,
+   "productsOfInterest": [
+    "P04",
+    "P18"
+   ]
+  },
+  "probability": 0.028101731091737747
+ },
+ {
+  "lead": {
+   "leadSource": "Field sales",
+   "segment": "Small multi-site businesses",
+   "preferredLanguage": "Hindi",
+   "currentInternet": "Business broadband",
+   "currentProvider": "Competitor B",
+   "cityTier": 2,
+   "employeeCount": 72,
+   "numSites": 8,
+   "annualTurnoverBand": "5 - 25 cr",
+   "hasGstin": true,
+   "hasUdyam": true,
+   "monthlyTelecomSpendInr": 12350.0,
+   "productsOfInterest": [
+    "P02",
+    "P13",
+    "P16"
+   ]
+  },
+  "probability": 0.12334886193275452
+ },
+ {
+  "lead": {
+   "leadSource": "WhatsApp campaign",
+   "segment": "Professional offices",
+   "preferredLanguage": "English",
+   "currentInternet": "Business broadband",
+   "currentProvider": "Competitor A",
+   "cityTier": 2,
+   "employeeCount": 25,
+   "numSites": 1,
+   "annualTurnoverBand": "5 - 25 cr",
+   "hasGstin": false,
+   "hasUdyam": true,
+   "monthlyTelecomSpendInr": 3950.0,
+   "productsOfInterest": [
+    "P18",
+    "P21"
+   ]
+  },
+  "probability": 0.047798220068216324
+ },
+ {
+  "lead": {
+   "leadSource": "Inbound call",
+   "segment": "Professional offices",
+   "preferredLanguage": "Marathi",
+   "currentInternet": "Business broadband",
+   "currentProvider": "Accel",
+   "cityTier": 1,
+   "employeeCount": 5,
+   "numSites": 1,
+   "annualTurnoverBand": "1.5 - 5 cr",
+   "hasGstin": true,
+   "hasUdyam": false,
+   "monthlyTelecomSpendInr": 2550.0,
+   "productsOfInterest": [
+    "P02"
+   ]
+  },
+  "probability": 0.12462339550256729
+ },
+ {
+  "lead": {
+   "leadSource": "Field sales",
+   "segment": "Professional offices",
+   "preferredLanguage": "Hindi",
+   "currentInternet": "Business broadband",
+   "currentProvider": "Competitor A",
+   "cityTier": 2,
+   "employeeCount": 14,
+   "numSites": 2,
+   "annualTurnoverBand": "1.5 - 5 cr",
+   "hasGstin": true,
+   "hasUdyam": false,
+   "monthlyTelecomSpendInr": 3700.0,
+   "productsOfInterest": [
+    "P13"
+   ]
+  },
+  "probability": 0.123108871281147
+ },
+ {
+  "lead": {
+   "leadSource": "Inbound call",
+   "segment": "Professional offices",
+   "preferredLanguage": "Marathi",
+   "currentInternet": "Home broadband",
+   "currentProvider": "Competitor B",
+   "cityTier": 1,
+   "employeeCount": 21,
+   "numSites": 2,
+   "annualTurnoverBand": "40 lakh - 1.5 cr",
+   "hasGstin": true,
+   "hasUdyam": true,
+   "monthlyTelecomSpendInr": 1400.0,
+   "productsOfInterest": [
+    "P02",
+    "P16",
+    "P18"
+   ]
+  },
+  "probability": 0.11311320215463638
+ },
+ {
+  "lead": {
+   "leadSource": "WhatsApp campaign",
+   "segment": "Small manufacturers",
+   "preferredLanguage": "English",
+   "currentInternet": "Business broadband",
+   "currentProvider": "Competitor A",
+   "cityTier": 1,
+   "employeeCount": 59,
+   "numSites": 1,
+   "annualTurnoverBand": "1.5 - 5 cr",
+   "hasGstin": true,
+   "hasUdyam": true,
+   "monthlyTelecomSpendInr": 14300.0,
+   "productsOfInterest": [
+    "P03",
+    "P20"
+   ]
+  },
+  "probability": 0.07761109620332718
+ },
+ {
+  "lead": {
+   "leadSource": "Channel partner",
+   "segment": "Professional offices",
+   "preferredLanguage": "Hindi",
+   "currentInternet": "Mobile hotspot",
+   "currentProvider": "Competitor A",
+   "cityTier": 2,
+   "employeeCount": 3,
+   "numSites": 1,
+   "annualTurnoverBand": "5 - 25 cr",
+   "hasGstin": true,
+   "hasUdyam": false,
+   "monthlyTelecomSpendInr": 2600.0,
+   "productsOfInterest": [
+    "P18"
+   ]
+  },
+  "probability": 0.08210685849189758
+ }
+]

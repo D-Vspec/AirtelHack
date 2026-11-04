@@ -88,3 +88,47 @@ Cut / risks:
 - Lead list, unclosed leads and the partner handoff view need the scoring service (Phase 7).
 - UI translations are machine-drafted; a native-speaker review is needed.
 - Advisor replies print rupees as the LLM writes them (₹3933), not in Indian grouping.
+
+## Phase 7 - Scoring and handoff
+Added:
+- **ml/train.py** (pinned ml/requirements.txt, venv in ml/.venv) trains XGBoost on features known at lead creation; all leakage columns are excluded and listed in the card.
+  - Time split: train 04-01..05-15, validation 05-16..05-31 for early stopping and Platt calibration, test June.
+  - The 7.4% positive rate is handled with scale_pos_weight followed by calibration.
+  - Compared with logistic regression and a segment-average baseline: PR-AUC, ROC-AUC, top-decile lift, Brier, calibration by decile, gain importance per input field, and bootstrap intervals for the PR-AUC differences.
+  - Writes go/pkg/scoring/model.json, parity fixtures and docs/model-eval.md.
+- **go/pkg/scoring** evaluates the exported trees in plain Go. `leaves` cannot read XGBoost 3 models, and the trees are small enough to need no sidecar. Reasons are Saabas path attributions summed per input field (top 3, raises/lowers). Bands come from the training-score deciles.
+- **Scoring service:**
+  - Endpoints: POST /score, GET /leads (ranked, live or case), GET /tasks (partner tasks ranked by score), POST /tasks/{id}/claim, POST /tasks/{id}/close.
+  - Consumes lead.created and advisor.profile.updated, re-scoring live leads and emitting lead.scored through the outbox. Leads from the new digital channel are scored as "Website form".
+  - Consumes lead.unclosed, opening (or updating) one partner task per lead.
+  - Imports the case data's June leads (the test month) at startup as the demo pipeline.
+- **Advisor:** POST /handoff emits lead.unclosed with a deterministic summary (profile facts, last quote, reason) and the last 12 turns.
+- **Web:** a "Talk to a person" link in chat; admin pages "Leads by score" (live or case, with reasons) and "Partner handoff" (summary, transcript, score, claim and close).
+- **Shared:** scoring types and API methods, and two new strings in all 10 languages.
+- **Contracts:** contracts/scoring.schema.json; payloads documented for lead.unclosed and lead.scored.
+- **Docs:** docs/model-card.md and docs/model-eval.md.
+- **Make:** `make model`.
+
+Results (June test month, 1,704 leads, 127 activated):
+
+| model | PR-AUC | top-decile lift |
+|---|---|---|
+| XGBoost | 0.151 | 2.37 |
+| Logistic regression | 0.143 | 2.13 |
+| Segment average | 0.106 | 1.82 |
+
+- XGBoost beats the segment average (95% interval for the PR-AUC gain [+0.014, +0.086]).
+- XGBoost does **not** reliably beat logistic regression ([−0.020, +0.037]). The card says so.
+- Calibrated Brier 0.0666.
+
+Verified:
+- Go/Python parity on 51 test leads (1e-5), plus behaviour tests (GSTIN and referral raise the score; no GSTIN is a top reason).
+- Integration tests: case leads served ranked with reasons; a lead.unclosed event opens a partner task, claim works, and a second claim gets 409.
+- Live: an advisor conversation about a custom request (private 5G) handed off; the task shows its score and factual summary.
+- Desktop E2E including the new admin pages; advisor tests 14/14; `go test ./...` green.
+
+Cut / risks:
+- Synthetic data, 368 positives, a single test month.
+- The new channel is mapped to "Website form" by assumption.
+- Language and city tier are features, and the leads list shows e.g. "Language: Tamil (lowers the score)". This needs a fairness review before production use (model card, Limits).
+- Reasons approximate SHAP. Partner tasks have no assignment rules beyond claim.

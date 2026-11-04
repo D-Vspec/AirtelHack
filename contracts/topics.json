@@ -18,8 +18,8 @@
     {"name": "order.status.changed", "partitions": 3, "key": "leadId", "description": "Order state machine transition; payload {orderId, leadId, from, to, reason, expectedActivationDate, at}"},
     {"name": "order.fallback.offered", "partitions": 3, "key": "leadId", "description": "Fibre not feasible at the site: offer 5G AirFiber instead; payload {orderId, leadId, replaceProductIds[], offerProductId, offerInstallDays, reason}"},
     {"name": "notification.requested", "partitions": 3, "key": "leadId", "description": "Ask notify to message the owner; payload {leadId, templateKey, params, channels[]}"},
-    {"name": "lead.unclosed", "partitions": 3, "key": "leadId", "description": "Advisor could not close; hand off to partner"},
-    {"name": "lead.scored", "partitions": 3, "key": "leadId", "description": "Propensity score computed"},
+    {"name": "lead.unclosed", "partitions": 3, "key": "leadId", "description": "Advisor could not close (custom request, owner asked for a person); payload {sessionId, leadId, reason, summary, profile, transcript[]}"},
+    {"name": "lead.scored", "partitions": 3, "key": "leadId", "description": "Propensity score computed or changed; payload {leadId, probability, band, reasons[], model}"},
     {"name": "dlq.events", "partitions": 1, "key": "id", "description": "Dead letters from any consumer"}
   ]
 }
