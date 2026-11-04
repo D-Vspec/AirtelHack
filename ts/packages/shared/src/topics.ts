@@ -15,6 +15,7 @@ export const TOPICS = {
   KYC_REVIEW_REQUESTED: "kyc.review.requested",
   ORDER_CREATED: "order.created",
   ORDER_STATUS_CHANGED: "order.status.changed",
+  ORDER_FALLBACK_OFFERED: "order.fallback.offered",
   NOTIFICATION_REQUESTED: "notification.requested",
   LEAD_UNCLOSED: "lead.unclosed",
   LEAD_SCORED: "lead.scored",

@@ -103,6 +103,11 @@ services:
     <<: *go-service
     build: { context: ./go, args: { SERVICE: notify } }
     environment: { <<: *go-env, PORT: "8086" }
+  simulator:
+    <<: *go-service
+    build: { context: ./go, args: { SERVICE: simulator } }
+    environment: { <<: *go-env, TRACKER_URL: "http://tracker:8085" }
+    depends_on: { tracker: { condition: service_started } }
   scoring:
     <<: *go-service
     build: { context: ./go, args: { SERVICE: scoring } }

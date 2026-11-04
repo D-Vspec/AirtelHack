@@ -22,6 +22,7 @@ import (
 	"udyam/pkg/events"
 	"udyam/pkg/kyc"
 	"udyam/pkg/logx"
+	"udyam/pkg/outbox"
 	"udyam/pkg/registry"
 	"udyam/pkg/svc"
 )
@@ -75,6 +76,7 @@ type server struct {
 	ocr       kyc.OCR
 	policy    kyc.Policy
 	specimens string
+	resumeURL string
 }
 
 func main() {
@@ -94,9 +96,15 @@ func main() {
 				ocr:       kyc.Tesseract{},
 				policy:    kyc.DefaultPolicy(ref),
 				specimens: config.String("KYC_SPECIMEN_DIR", "/data/kyc_documents"),
+				resumeURL: config.String("KYC_RESUME_BASE_URL", "http://localhost:3000/kyc/resume/"),
+			}
+			if err := outbox.Init(ctx, a.DB); err != nil {
+				return err
 			}
 			s.routes()
+			go outbox.Relay(ctx, a.DB, a.Producer, a.Log)
 			go s.retention(ctx, time.Duration(config.Int("KYC_DOC_RETENTION_DAYS", 30))*24*time.Hour)
+			go s.abandonSweep(ctx, time.Duration(config.Int("KYC_ABANDON_AFTER_MINUTES", 1440))*time.Minute)
 			return nil
 		},
 	})
@@ -115,6 +123,8 @@ func (s *server) routes() {
 	m.HandleFunc("GET /reviews", s.listReviews)
 	m.HandleFunc("GET /reviews/{id}", s.getReview)
 	m.HandleFunc("POST /reviews/{id}/decision", s.decide)
+	m.HandleFunc("POST /applications/{leadId}/resume-link", s.resumeLink)
+	m.HandleFunc("GET /resume/{token}", s.resume)
 }
 
 func fail(w http.ResponseWriter, status int, code, msg string) {
@@ -124,17 +134,6 @@ func fail(w http.ResponseWriter, status int, code, msg string) {
 func (s *server) internal(w http.ResponseWriter, what string, err error) {
 	s.a.Log.Error(what, "err", err)
 	fail(w, 500, "INTERNAL", what)
-}
-
-func (s *server) publish(ctx context.Context, topic, leadID, correlationID string, payload any) {
-	env, err := events.New(topic, leadID, correlationID, payload)
-	if err == nil {
-		err = s.a.Producer.Publish(ctx, topic, env)
-	}
-	if err != nil {
-		// ponytail: no outbox yet (Phase 5); the DB write already happened.
-		s.a.Log.Error("publish failed", "topic", topic, "leadId", leadID, "err", err)
-	}
 }
 
 func leadID(w http.ResponseWriter, r *http.Request) (string, bool) {
@@ -181,12 +180,11 @@ func (s *server) createConsent(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	c := Consent{ID: events.NewID(), LeadID: req.LeadID, Purposes: req.Purposes, Version: req.Version, Language: req.Language, GrantedAt: time.Now().UTC()}
-	if err := s.st.insertConsent(r.Context(), c); err != nil {
+	if err := s.st.insertConsent(r.Context(), c, evt{events.TopicConsentRecorded, c.LeadID, r.Header.Get("X-Correlation-Id"), c}); err != nil {
 		s.internal(w, "consent insert failed", err)
 		return
 	}
 	s.a.Log.Info("consent recorded", "leadId", c.LeadID, "purposes", c.Purposes, "version", c.Version)
-	s.publish(r.Context(), events.TopicConsentRecorded, c.LeadID, r.Header.Get("X-Correlation-Id"), c)
 	svc.JSON(w, 201, c)
 }
 
@@ -222,15 +220,18 @@ func (s *server) withdrawConsent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	at := time.Now().UTC()
-	n, err := s.st.withdraw(r.Context(), c.ID, lead, at)
+	out := func(n int64) map[string]any {
+		return map[string]any{"consentId": c.ID, "leadId": lead, "withdrawnAt": at, "purgedDocuments": n}
+	}
+	n, err := s.st.withdraw(r.Context(), c.ID, lead, at, func(n int64) evt {
+		return evt{events.TopicConsentWithdrawn, lead, r.Header.Get("X-Correlation-Id"), out(n)}
+	})
 	if err != nil {
 		s.internal(w, "withdraw failed", err)
 		return
 	}
-	out := map[string]any{"consentId": c.ID, "leadId": lead, "withdrawnAt": at, "purgedDocuments": n}
 	s.a.Log.Info("consent withdrawn; documents purged", "leadId", lead, "purged", n)
-	s.publish(r.Context(), events.TopicConsentWithdrawn, lead, r.Header.Get("X-Correlation-Id"), out)
-	svc.JSON(w, 200, out)
+	svc.JSON(w, 200, out(n))
 }
 
 // prefill returns registry data for a GSTIN the owner typed, so they upload less.
@@ -366,7 +367,10 @@ func (s *server) check(w http.ResponseWriter, r *http.Request) {
 		types = append(types, t)
 	}
 	slices.Sort(types)
-	s.publish(ctx, events.TopicKycSubmitted, lead, corr, map[string]any{"leadId": lead, "documents": types})
+	if err := outbox.EnqueueNow(ctx, s.a.DB, events.TopicKycSubmitted, lead, corr, map[string]any{"leadId": lead, "documents": types}); err != nil {
+		s.internal(w, "event store failed", err)
+		return
+	}
 
 	runCtx, cancel := context.WithTimeout(ctx, 90*time.Second)
 	defer cancel()
@@ -380,7 +384,7 @@ func (s *server) check(w http.ResponseWriter, r *http.Request) {
 	if res.Route == events.RouteManualReview {
 		review = &Review{ID: events.NewID(), LeadID: lead, Status: "open", Codes: res.Codes(), CreatedAt: time.Now().UTC()}
 	}
-	if err := s.st.saveResult(ctx, lead, corr, res, review); err != nil {
+	if err := s.st.saveResult(ctx, lead, corr, res, review, resultEvents(lead, corr, res, review)); err != nil {
 		s.internal(w, "result store failed", err)
 		return
 	}
@@ -392,29 +396,36 @@ func (s *server) check(w http.ResponseWriter, r *http.Request) {
 	}
 	s.a.Log.Info("kyc checked", "leadId", lead, "route", res.Route, "codes", res.Codes(), "gstin", logx.MaskID(res.Verified.GSTIN))
 
-	byStage := map[string][]kyc.Finding{}
-	for _, f := range res.Findings {
-		byStage[f.Stage] = append(byStage[f.Stage], f)
-	}
-	for _, st := range kyc.Stages {
-		if fs := byStage[st]; len(fs) > 0 {
-			s.publish(ctx, events.TopicKycChecked, lead, corr, map[string]any{"leadId": lead, "stage": st, "findings": fs})
-		}
-	}
-	switch res.Route {
-	case events.RoutePass:
-		s.publish(ctx, events.TopicKycPassed, lead, corr, map[string]any{"leadId": lead, "decidedBy": "pipeline", "gstinMasked": logx.MaskID(res.Verified.GSTIN)})
-	case events.RouteManualReview:
-		s.publish(ctx, events.TopicKycReviewRequested, lead, corr, map[string]any{"leadId": lead, "reviewId": review.ID, "codes": review.Codes})
-	default:
-		s.publish(ctx, events.TopicKycFailed, lead, corr, map[string]any{"leadId": lead, "route": res.Route, "codes": res.Codes(), "decidedBy": "pipeline"})
-	}
 	var reviewID *string
 	if review != nil {
 		reviewID = &review.ID
 	}
 	remaining, _ := s.st.documentTypes(ctx, lead)
 	svc.JSON(w, 200, applicationView(lead, res.Route, remaining, &res, reviewID))
+}
+
+// resultEvents are the events a check result produces: kyc.checked per stage with findings,
+// then exactly one of kyc.passed, kyc.review.requested or kyc.failed.
+func resultEvents(lead, corr string, res kyc.Result, review *Review) []evt {
+	var evs []evt
+	byStage := map[string][]kyc.Finding{}
+	for _, f := range res.Findings {
+		byStage[f.Stage] = append(byStage[f.Stage], f)
+	}
+	for _, st := range kyc.Stages {
+		if fs := byStage[st]; len(fs) > 0 {
+			evs = append(evs, evt{events.TopicKycChecked, lead, corr, map[string]any{"leadId": lead, "stage": st, "findings": fs}})
+		}
+	}
+	switch res.Route {
+	case events.RoutePass:
+		evs = append(evs, evt{events.TopicKycPassed, lead, corr, map[string]any{"leadId": lead, "decidedBy": "pipeline", "gstinMasked": logx.MaskID(res.Verified.GSTIN)}})
+	case events.RouteManualReview:
+		evs = append(evs, evt{events.TopicKycReviewRequested, lead, corr, map[string]any{"leadId": lead, "reviewId": review.ID, "codes": review.Codes}})
+	default:
+		evs = append(evs, evt{events.TopicKycFailed, lead, corr, map[string]any{"leadId": lead, "route": res.Route, "codes": res.Codes(), "decidedBy": "pipeline"}})
+	}
+	return evs
 }
 
 func (s *server) getApplication(w http.ResponseWriter, r *http.Request) {
@@ -523,7 +534,12 @@ func (s *server) decide(w http.ResponseWriter, r *http.Request) {
 		fail(w, 404, "NOT_FOUND", "no such review")
 		return
 	}
-	done, err := s.st.decide(r.Context(), id, req.Decision, req.Reviewer, req.Note, route, time.Now().UTC())
+	done, err := s.st.decide(r.Context(), id, req.Decision, req.Reviewer, req.Note, route, time.Now().UTC(), func(lead, corr string) evt {
+		if route == events.RoutePass {
+			return evt{events.TopicKycPassed, lead, corr, map[string]any{"leadId": lead, "decidedBy": "reviewer", "reviewId": id}}
+		}
+		return evt{events.TopicKycFailed, lead, corr, map[string]any{"leadId": lead, "route": route, "codes": rv.Codes, "decidedBy": "reviewer", "reviewId": id}}
+	})
 	if err != nil {
 		s.internal(w, "decision failed", err)
 		return
@@ -532,21 +548,12 @@ func (s *server) decide(w http.ResponseWriter, r *http.Request) {
 		fail(w, 409, "REVIEW_CLOSED", "this review was already decided")
 		return
 	}
-	corr := ""
-	if a, err := s.st.application(r.Context(), rv.LeadID); err == nil && a != nil {
-		corr = a.CorrelationID
-	}
 	if route != events.RouteReupload {
 		if err := s.st.purgeDocuments(r.Context(), rv.LeadID); err != nil {
 			s.a.Log.Error("purge after decision failed", "leadId", rv.LeadID, "err", err)
 		}
 	}
 	s.a.Log.Info("review decided", "reviewId", id, "leadId", rv.LeadID, "decision", req.Decision)
-	if route == events.RoutePass {
-		s.publish(r.Context(), events.TopicKycPassed, rv.LeadID, corr, map[string]any{"leadId": rv.LeadID, "decidedBy": "reviewer", "reviewId": id})
-	} else {
-		s.publish(r.Context(), events.TopicKycFailed, rv.LeadID, corr, map[string]any{"leadId": rv.LeadID, "route": route, "codes": rv.Codes, "decidedBy": "reviewer", "reviewId": id})
-	}
 	rv, _ = s.st.review(r.Context(), id)
 	svc.JSON(w, 200, rv)
 }

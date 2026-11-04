@@ -21,6 +21,7 @@ import (
 	"udyam/pkg/catalogue"
 	"udyam/pkg/config"
 	"udyam/pkg/events"
+	"udyam/pkg/outbox"
 	"udyam/pkg/svc"
 )
 
@@ -125,15 +126,14 @@ func main() {
 				}
 				return s, nil
 			}
-			// ponytail: publish after commit without an outbox; Phase 5 adds the outbox pattern.
-			publish := func(r *http.Request, topic string, q catalogue.Quote) {
-				env, err := events.New(topic, q.LeadID, r.Header.Get("X-Request-Id"), q)
-				if err == nil {
-					err = a.Producer.Publish(r.Context(), topic, env)
-				}
-				if err != nil {
-					a.Log.Error("publish failed", "topic", topic, "quoteId", q.ID, "err", err)
-				}
+			if err := outbox.Init(ctx, a.DB); err != nil {
+				return err
+			}
+			go outbox.Relay(ctx, a.DB, a.Producer, a.Log)
+			// write + event in one transaction (pkg/outbox); the relay publishes to Kafka
+			enqueue := func(r *http.Request, tx pgx.Tx, topic string, q catalogue.Quote) error {
+				_, err := outbox.Enqueue(r.Context(), tx, topic, q.LeadID, r.Header.Get("X-Request-Id"), q)
+				return err
 			}
 
 			a.Mux.HandleFunc("POST /quotes", func(w http.ResponseWriter, r *http.Request) {
@@ -147,12 +147,16 @@ func main() {
 					return
 				}
 				q.ID, q.CreatedAt = events.NewID(), time.Now().UTC()
-				if _, err := a.DB.Exec(r.Context(), `INSERT INTO quotes (id, lead_id, status, profile, quote, created_at) VALUES ($1, $2, $3, $4, $5, $6)`,
-					q.ID, q.LeadID, q.Status, req.Profile, q, q.CreatedAt); err != nil {
+				if err := pgx.BeginFunc(r.Context(), a.DB, func(tx pgx.Tx) error {
+					if _, err := tx.Exec(r.Context(), `INSERT INTO quotes (id, lead_id, status, profile, quote, created_at) VALUES ($1, $2, $3, $4, $5, $6)`,
+						q.ID, q.LeadID, q.Status, req.Profile, q, q.CreatedAt); err != nil {
+						return err
+					}
+					return enqueue(r, tx, events.TopicQuoteCreated, q)
+				}); err != nil {
 					svc.JSON(w, 500, map[string]string{"code": "STORE_FAILED", "message": err.Error()})
 					return
 				}
-				publish(r, events.TopicQuoteCreated, q)
 				svc.JSON(w, 201, q)
 			})
 
@@ -221,13 +225,15 @@ func main() {
 				now := time.Now().UTC()
 				q := s.Quote
 				q.Status, q.AcceptedAt = "accepted", &now
-				tag, err := a.DB.Exec(r.Context(), `UPDATE quotes SET status = 'accepted', accepted_at = $2, quote = $3 WHERE id = $1 AND status = 'draft'`, q.ID, now, q)
-				if err != nil {
+				if err := pgx.BeginFunc(r.Context(), a.DB, func(tx pgx.Tx) error {
+					tag, err := tx.Exec(r.Context(), `UPDATE quotes SET status = 'accepted', accepted_at = $2, quote = $3 WHERE id = $1 AND status = 'draft'`, q.ID, now, q)
+					if err != nil || tag.RowsAffected() == 0 {
+						return err // already accepted by a concurrent request: no second event
+					}
+					return enqueue(r, tx, events.TopicQuoteAccepted, q)
+				}); err != nil {
 					svc.JSON(w, 500, map[string]string{"code": "STORE_FAILED", "message": err.Error()})
 					return
-				}
-				if tag.RowsAffected() == 1 {
-					publish(r, events.TopicQuoteAccepted, q)
 				}
 				svc.JSON(w, 200, q)
 			})

@@ -18,6 +18,7 @@ const (
 	TopicKycReviewRequested    = "kyc.review.requested"
 	TopicOrderCreated          = "order.created"
 	TopicOrderStatusChanged    = "order.status.changed"
+	TopicOrderFallbackOffered  = "order.fallback.offered"
 	TopicNotificationRequested = "notification.requested"
 	TopicLeadUnclosed          = "lead.unclosed"
 	TopicLeadScored            = "lead.scored"
@@ -41,6 +42,7 @@ var AllTopics = []string{
 	TopicKycReviewRequested,
 	TopicOrderCreated,
 	TopicOrderStatusChanged,
+	TopicOrderFallbackOffered,
 	TopicNotificationRequested,
 	TopicLeadUnclosed,
 	TopicLeadScored,

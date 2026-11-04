@@ -13,6 +13,7 @@ kyc.passed:3
 kyc.review.requested:3
 order.created:3
 order.status.changed:3
+order.fallback.offered:3
 notification.requested:3
 lead.unclosed:3
 lead.scored:3

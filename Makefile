@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 SVC ?=
 PHASE ?=
-.PHONY: help setup deps contracts up down logs ps seed smoke test typecheck package packs data-dictionary clean kyc-test kyc-record
+.PHONY: help setup deps contracts up down logs ps seed smoke test typecheck package packs data-dictionary clean kyc-test kyc-record integration
 
 help: ## list targets
 	@grep -E '^[a-z-]+:.*##' Makefile | sed 's/:.*##/\t/' | column -t -s $$'\t'
@@ -51,6 +51,9 @@ kyc-test: ## KYC 12-applicant table against real tesseract (Docker); plain `make
 kyc-record: ## re-record tesseract output for the KYC replay tests (after changing image preprocessing)
 	rm -f go/pkg/kyc/testdata/ocr/*.txt
 	$(KYC_TEST_RUN) -e KYC_RECORD=1 udyam-kyc-test go test ./pkg/kyc -count=1 -run Specimen
+
+integration: ## lead -> quote -> KYC -> activation on the live stack, with services and Kafka stopped mid-flow (needs make up seed)
+	cd go && go test -tags integration ./integration -count=1 -v -timeout 15m
 
 typecheck: ## TypeScript typecheck for every package
 	cd ts && pnpm typecheck

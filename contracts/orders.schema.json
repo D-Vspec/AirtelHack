@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "udyam/orders",
+  "title": "Tracker and notify HTTP shapes and event payloads",
+  "description": "tracker (8085, gateway /api/tracker): GET /orders?leadId=&status= -> {orders: Order[]}; GET /orders/{id} -> Order; GET /orders/{id}/timeline -> Timeline; POST /orders/{id}/transitions (Transition -> Order; 409 INVALID_TRANSITION); POST /orders/{id}/fallback/accept (swap fibre for 5G AirFiber -> Order). The tracker creates orders from quote.accepted and moves them on kyc.passed / kyc.failed (reject). notify (8086, gateway /api/notify): GET /messages?leadId= -> {messages: SentMessage[]}. Go: go/pkg/orders, go/cmd/tracker, go/cmd/notify. TS: ts/packages/shared/src/orders.ts.",
+  "$defs": {
+    "OrderStatus": {"enum": ["quote_accepted", "kyc_pending", "kyc_passed", "install_scheduled", "installing", "activated", "delayed", "failed"]},
+    "Transitions": {
+      "description": "Allowed moves (go/pkg/orders.Allowed). activated and failed are final.",
+      "const": {
+        "quote_accepted": ["kyc_pending", "kyc_passed", "failed"],
+        "kyc_pending": ["kyc_passed", "failed"],
+        "kyc_passed": ["install_scheduled", "delayed", "failed"],
+        "install_scheduled": ["installing", "delayed", "failed"],
+        "installing": ["activated", "delayed", "failed"],
+        "delayed": ["install_scheduled", "installing", "failed"]
+      }
+    },
+    "Order": {
+      "type": "object",
+      "required": ["id", "leadId", "quoteId", "status", "productIds", "expectedInstallDays", "createdAt", "updatedAt"],
+      "properties": {
+        "id": {"type": "string"}, "leadId": {"type": "string"}, "quoteId": {"type": "string"},
+        "status": {"$ref": "#/$defs/OrderStatus"},
+        "statusReason": {"type": "string", "description": "e.g. fibre_not_feasible, kyc_rejected, fallback_5g_accepted"},
+        "productIds": {"type": "array", "items": {"type": "string"}},
+        "lines": {"type": "array", "items": {"type": "object", "properties": {"productId": {"type": "string"}, "productName": {"type": "string"}, "quantity": {"type": "integer"}, "installDays": {"type": "integer"}}}},
+        "monthlyTotalInr": {"type": "integer"}, "oneTimeTotalInr": {"type": "integer"},
+        "expectedInstallDays": {"type": "integer", "description": "Slowest product's typical_install_days"},
+        "expectedActivationDate": {"type": "string", "format": "date", "description": "KYC pass date (or order date until then) + expectedInstallDays"},
+        "fallbackOffered": {"type": "boolean"},
+        "createdAt": {"type": "string", "format": "date-time"}, "updatedAt": {"type": "string", "format": "date-time"}
+      }
+    },
+    "Transition": {
+      "type": "object", "required": ["to"], "additionalProperties": false,
+      "properties": {"to": {"$ref": "#/$defs/OrderStatus"}, "reason": {"type": "string", "maxLength": 64}, "note": {"type": "string", "maxLength": 500}}
+    },
+    "Timeline": {
+      "type": "object", "required": ["order", "entries", "steps"],
+      "properties": {
+        "order": {"$ref": "#/$defs/Order"},
+        "entries": {"type": "array", "items": {"type": "object", "properties": {"status": {"type": "string"}, "reason": {"type": "string"}, "note": {"type": "string"}, "at": {"type": "string", "format": "date-time"}}}},
+        "steps": {"type": "array", "description": "The happy path for a progress bar", "items": {"type": "object", "properties": {"status": {"type": "string"}, "state": {"enum": ["done", "current", "upcoming", "blocked"]}, "at": {"type": "string", "format": "date-time"}}}}
+      }
+    },
+    "SentMessage": {
+      "type": "object",
+      "properties": {
+        "id": {"type": "string"}, "eventId": {"type": "string"}, "leadId": {"type": "string"},
+        "channel": {"enum": ["whatsapp", "sms", "email"]}, "templateKey": {"type": "string"}, "language": {"type": "string"},
+        "recipient": {"type": "string", "description": "Masked; adapters are mocks"}, "body": {"type": "string"}, "createdAt": {"type": "string", "format": "date-time"}
+      }
+    },
+    "events": {
+      "order.created": {"$ref": "#/$defs/Order"},
+      "order.status.changed": {"type": "object", "properties": {"orderId": {"type": "string"}, "leadId": {"type": "string"}, "from": {"type": "string"}, "to": {"type": "string"}, "reason": {"type": "string"}, "expectedActivationDate": {"type": "string"}, "at": {"type": "string", "format": "date-time"}}},
+      "order.fallback.offered": {"type": "object", "properties": {"orderId": {"type": "string"}, "leadId": {"type": "string"}, "replaceProductIds": {"type": "array", "items": {"type": "string"}}, "offerProductId": {"type": "string"}, "offerInstallDays": {"type": "integer"}, "reason": {"type": "string"}}},
+      "notification.requested": {"type": "object", "required": ["leadId", "templateKey"], "properties": {"leadId": {"type": "string"}, "templateKey": {"type": "string"}, "params": {"type": "object", "additionalProperties": {"type": "string"}}, "channels": {"type": "array", "items": {"enum": ["whatsapp", "sms", "email"]}}}}
+    }
+  }
+}

@@ -3,3 +3,4 @@
 *.sql text eol=lf
 infra/** text eol=lf
 Makefile text eol=lf
+go/pkg/kyc/testdata/** -text

@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"udyam/pkg/kyc"
+	"udyam/pkg/outbox"
 )
 
 // Tables live in the kyc schema (pg.Connect sets search_path). Images are kept only until a
@@ -53,6 +54,14 @@ CREATE TABLE IF NOT EXISTS reviews (
 	decided_at  timestamptz
 );
 CREATE INDEX IF NOT EXISTS reviews_status ON reviews (status, created_at);
+CREATE TABLE IF NOT EXISTS resume_links (
+	token       text PRIMARY KEY,
+	lead_id     text NOT NULL,
+	created_at  timestamptz NOT NULL,
+	expires_at  timestamptz NOT NULL,
+	reason      text NOT NULL
+);
+CREATE INDEX IF NOT EXISTS resume_links_lead ON resume_links (lead_id, created_at DESC);
 `
 
 type Consent struct {
@@ -80,6 +89,21 @@ type Review struct {
 
 type store struct{ db *pgxpool.Pool }
 
+// evt is an event written to the outbox in the same transaction as the change it describes.
+type evt struct {
+	topic, lead, corr string
+	payload           any
+}
+
+func enqueueAll(ctx context.Context, tx pgx.Tx, evs []evt) error {
+	for _, e := range evs {
+		if _, err := outbox.Enqueue(ctx, tx, e.topic, e.lead, e.corr, e.payload); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // activeConsent returns the latest consent for the lead if it is not withdrawn.
 func (s store) activeConsent(ctx context.Context, leadID string) (*Consent, error) {
 	var c Consent
@@ -95,14 +119,18 @@ func (s store) activeConsent(ctx context.Context, leadID string) (*Consent, erro
 	return &c, nil
 }
 
-func (s store) insertConsent(ctx context.Context, c Consent) error {
-	_, err := s.db.Exec(ctx, `INSERT INTO consents (id, lead_id, purposes, version, language, granted_at) VALUES ($1,$2,$3,$4,$5,$6)`,
-		c.ID, c.LeadID, c.Purposes, c.Version, c.Language, c.GrantedAt)
-	return err
+func (s store) insertConsent(ctx context.Context, c Consent, evs ...evt) error {
+	return pgx.BeginFunc(ctx, s.db, func(tx pgx.Tx) error {
+		if _, err := tx.Exec(ctx, `INSERT INTO consents (id, lead_id, purposes, version, language, granted_at) VALUES ($1,$2,$3,$4,$5,$6)`,
+			c.ID, c.LeadID, c.Purposes, c.Version, c.Language, c.GrantedAt); err != nil {
+			return err
+		}
+		return enqueueAll(ctx, tx, evs)
+	})
 }
 
 // withdraw marks consent withdrawn and purges every document, result and open review.
-func (s store) withdraw(ctx context.Context, consentID, leadID string, at time.Time) (int64, error) {
+func (s store) withdraw(ctx context.Context, consentID, leadID string, at time.Time, event func(purged int64) evt) (int64, error) {
 	tx, err := s.db.Begin(ctx)
 	if err != nil {
 		return 0, err
@@ -119,6 +147,12 @@ func (s store) withdraw(ctx context.Context, consentID, leadID string, at time.T
 		return 0, err
 	}
 	if _, err := tx.Exec(ctx, `DELETE FROM reviews WHERE lead_id = $1`, leadID); err != nil {
+		return 0, err
+	}
+	if _, err := tx.Exec(ctx, `DELETE FROM resume_links WHERE lead_id = $1`, leadID); err != nil {
+		return 0, err
+	}
+	if err := enqueueAll(ctx, tx, []evt{event(tag.RowsAffected())}); err != nil {
 		return 0, err
 	}
 	return tag.RowsAffected(), tx.Commit(ctx)
@@ -201,7 +235,7 @@ func (s store) application(ctx context.Context, leadID string) (*application, er
 }
 
 // saveResult stores a check result and, for manual_review, opens a review in one transaction.
-func (s store) saveResult(ctx context.Context, leadID, correlationID string, res kyc.Result, review *Review) error {
+func (s store) saveResult(ctx context.Context, leadID, correlationID string, res kyc.Result, review *Review, evs []evt) error {
 	tx, err := s.db.Begin(ctx)
 	if err != nil {
 		return err
@@ -224,6 +258,9 @@ func (s store) saveResult(ctx context.Context, leadID, correlationID string, res
 		correlation_id = EXCLUDED.correlation_id, updated_at = EXCLUDED.updated_at`,
 		leadID, res.Route, res, reviewID, correlationID, res.CheckedAt)
 	if err != nil {
+		return err
+	}
+	if err := enqueueAll(ctx, tx, evs); err != nil {
 		return err
 	}
 	return tx.Commit(ctx)
@@ -259,7 +296,7 @@ func (s store) review(ctx context.Context, id string) (*Review, error) {
 
 // decide closes an open review and sets the application status to the decision's route.
 // Returns false when the review was already decided.
-func (s store) decide(ctx context.Context, id, decision, reviewer, note, status string, at time.Time) (bool, error) {
+func (s store) decide(ctx context.Context, id, decision, reviewer, note, status string, at time.Time, event func(leadID, corr string) evt) (bool, error) {
 	tx, err := s.db.Begin(ctx)
 	if err != nil {
 		return false, err
@@ -274,7 +311,11 @@ func (s store) decide(ctx context.Context, id, decision, reviewer, note, status 
 	if err != nil {
 		return false, err
 	}
-	if _, err := tx.Exec(ctx, `UPDATE applications SET status = $2, updated_at = $3 WHERE lead_id = $1`, leadID, status, at); err != nil {
+	var corr string
+	if err := tx.QueryRow(ctx, `UPDATE applications SET status = $2, updated_at = $3 WHERE lead_id = $1 RETURNING correlation_id`, leadID, status, at).Scan(&corr); err != nil {
+		return false, err
+	}
+	if err := enqueueAll(ctx, tx, []evt{event(leadID, corr)}); err != nil {
 		return false, err
 	}
 	return true, tx.Commit(ctx)
