@@ -3,6 +3,7 @@ export * from "./kyc-findings";
 export * from "./kyc-messages";
 export * from "./kyc";
 export * from "./orders";
+export * from "./demo";
 export * from "./envelope";
 export * from "./profile";
 export * from "./i18n";

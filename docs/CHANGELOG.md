@@ -55,3 +55,36 @@ Verified: unit tests for the state machine, timeline steps, templates (en, hi an
 Bug found by the integration test and fixed: GET /orders with no status filter returned nothing (NULL array). `go test ./...`, `make smoke` and TS typecheck are green.
 
 Cut / risks: accepting the fallback swaps the product but does not re-price it (the note says the price must be re-confirmed through the quote service). Notify has no real phone or email (the recipient is the masked lead ID). The advisor still publishes directly to Kafka, not through an outbox. Order across topics is not guaranteed, so the tracker handles kyc.passed arriving before quote.accepted. OTP at lead creation (wrong numbers) is not built.
+
+## Phase 6 - Frontends
+Added:
+- **@udyam/shared:** a typed API client for every gateway route used (advisor, rules, quotes, KYC, tracker, notify; ApiError exposes the service's code and message). UI strings: 64 keys in all 10 languages, with t() and an Indian-grouping inr(). Order status labels in 10 languages. DEMO_OWNERS: six scenarios from docs/scenarios.md (Tamil clinic, Hindi kirana without GSTIN, CA firm asking for a firewall, 5-site restaurant chain, Hinglish mobile-only, fibre not feasible), each tied to a KYC specimen. Tests check that every language has every string with the same placeholders, and that every KYC code has a message and next step in every language.
+- **Web (Next.js 16, Tailwind 4), mobile-first and responsive.** On phones: a compact progress bar, a primary action pinned to the bottom (safe-area aware), 48 px tap targets, and cards instead of tables. On desktop: a vertical stepper, a two-column layout and a sticky price summary.
+  - Journey: language picker, advisor chat with quick-reply chips in the owner's language, then quote. The quote has line items, add-on toggles (only products the rules service says are eligible; a dependency refusal is shown as the service explains it) and accept.
+  - Then purpose-level consent, then KYC. KYC has GSTIN prefill, four camera/upload slots (photos shrunk on the device to 2000 px before upload), instant blur and skew feedback, sample documents, and the full check with a message and next step for every finding in the owner's language. Consent can be withdrawn here.
+  - Then the tracker, polling every 3 s: timeline, ETA, the 5G fallback offer with accept, and the WhatsApp and SMS messages sent. A resume-link landing page (/kyc/resume/[token]) restores the lead.
+  - Back office (/admin): orders (filterable), the KYC review queue with approve, re-upload or reject, and sent messages.
+  - Fonts: self-hosted Noto Sans (Latin plus 8 Indic scripts, variable weight) through next/font/local, each face with its own unicode-range, so a phone downloads only the scripts on screen. There are no network fonts.
+- **Mobile (Expo SDK 58, React 19.3 like web):** the same journey on the shared package. KYC slots open the rear camera (expo-image-picker) and fall back to the photo library. react-native-web is added so the app can be exercised in a browser.
+- **Scripts:** e2e.mjs drives the demo path in headless Edge through playwright-core (no browser download), at phone and desktop sizes, and saves docs/screens. e2e-mobile.mjs does the same for the Expo app's web build. Make targets: web, web-e2e, mobile-e2e.
+- **Fixes found by the E2E runs:**
+  - The advisor added a second fibre line when the owner said "need reliable internet"; there is now one primary access link per order (ACCESS_LINKS), with a live test.
+  - A useEffect returned scrollIntoView's Promise (current browsers return one), which crashed the chat after the first reply.
+  - The lead ID was generated with Math.random during render, which Cache Components refuses.
+  - next/font needs literal options.
+  - The test scripts used shell globs that cmd on Windows does not expand.
+
+Verified with the live stack and DeepSeek:
+- **Phone web (390x844):** Tamil clinic, chat in Tamil, then quote, consent, KYC K03 pass, and activation in about 50 s, with notify messages in Tamil.
+- **Desktop web:** no-fibre clinic, KYC K09 pass, delay with 5G offer, accept, activation on P04. The quote has exactly one access link (P02).
+- **Admin:** orders, review queue and messages pages render.
+- **Expo app (web build, 390x844):** restaurant chain, per-site quote, KYC K12 pass, activation.
+- `next build` passes; typecheck of all packages; shared tests 5/5; advisor tests 13/13 (live); Go tests unchanged.
+
+Cut / risks:
+- The native Expo app was not run on a device or emulator. The camera path is typechecked but untested; on a phone, set EXPO_PUBLIC_API_URL to the computer's LAN IP.
+- The journey is kept in localStorage on web and in memory on mobile.
+- The admin views have no login (Phase 8).
+- Lead list, unclosed leads and the partner handoff view need the scoring service (Phase 7).
+- UI translations are machine-drafted; a native-speaker review is needed.
+- Advisor replies print rupees as the LLM writes them (₹3933), not in Indian grouping.

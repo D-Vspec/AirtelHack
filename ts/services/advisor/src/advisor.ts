@@ -51,6 +51,9 @@ export interface Deps { llm: Llm; services: Services; emit: Emit }
 export const REQUIRED: (keyof BusinessProfile)[] = ["segment", "cityTier", "employeeCount", "numSites", "hasGstin"];
 export const MAX_TURNS_BEFORE_RECOMMEND = 4; // recommend by turn 4 at the latest, well inside 6
 
+/** Primary access links (data/product_catalogue.csv): Biz Fibre 100/300/1G, 5G AirFiber, leased lines. */
+export const ACCESS_LINKS = ["P01", "P02", "P03", "P04", "P05", "P06"];
+
 export function newSession(sessionId: string, leadId = `S-${sessionId.slice(0, 8)}`): SessionState {
   return { sessionId, leadId, turn: 0, history: [], profile: {}, counts: {}, language: "English", romanised: false };
 }
@@ -253,7 +256,10 @@ async function recommend(state: SessionState, byId: Map<string, Product>, deps: 
   };
   for (const it of bundle.items.filter((i) => !i.optional || state.profile.productsOfInterest?.includes(i.productId))) add(it.productId, it.unit, it.quantity);
   const interests = state.profile.productsOfInterest ?? [];
-  for (const id of interests.filter((id) => eligible.has(id))) {
+  // One primary access link per order: "reliable internet" extracted as interest in Biz Fibre 100
+  // must not add a second fibre line next to the one the bundle already sized for the business.
+  const hasLink = () => items.some((i) => ACCESS_LINKS.includes(i.productId));
+  for (const id of interests.filter((id) => eligible.has(id) && !(ACCESS_LINKS.includes(id) && hasLink()))) {
     const p = byId.get(id)!;
     const fromProfile = p.unit === "per site" ? state.profile.numSites ?? null : p.unit === "per user" ? state.profile.employeeCount ?? null
       : ["per account", "per pack", "per number"].includes(p.unit) ? 1 : null;

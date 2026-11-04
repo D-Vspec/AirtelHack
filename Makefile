@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 SVC ?=
 PHASE ?=
-.PHONY: help setup deps contracts up down logs ps seed smoke test typecheck package packs data-dictionary clean kyc-test kyc-record integration
+.PHONY: help setup deps contracts up down logs ps seed smoke test typecheck package packs data-dictionary clean kyc-test kyc-record integration web web-e2e mobile-e2e
 
 help: ## list targets
 	@grep -E '^[a-z-]+:.*##' Makefile | sed 's/:.*##/\t/' | column -t -s $$'\t'
@@ -54,6 +54,16 @@ kyc-record: ## re-record tesseract output for the KYC replay tests (after changi
 
 integration: ## lead -> quote -> KYC -> activation on the live stack, with services and Kafka stopped mid-flow (needs make up seed)
 	cd go && go test -tags integration ./integration -count=1 -v -timeout 15m
+
+web: ## build and serve the web app on :3000 (production build)
+	cd ts/apps/web && npx next build && npx next start -p 3000
+
+web-e2e: ## demo path in a real browser (Edge/Chrome), phone + desktop; screenshots to docs/screens (needs make up seed, LLM key, make web)
+	cd ts/apps/web && node scripts/e2e.mjs
+
+mobile-e2e: ## the Expo app's journey on its web build at phone size; screenshots to docs/screens
+	cd ts/apps/mobile && npx expo export --platform web --output-dir dist-web
+	cd ts/apps/web && MOBILE_DIR=../mobile/dist-web node scripts/e2e-mobile.mjs
 
 typecheck: ## TypeScript typecheck for every package
 	cd ts && pnpm typecheck

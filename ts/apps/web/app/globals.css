@@ -1,24 +1,41 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  --color-brand-50: #eef4ff;
+  --color-brand-100: #dbe7ff;
+  --color-brand-600: #1f5bd8;
+  --color-brand-700: #1748b0;
+  --color-brand-900: #0f3d91;
+  --font-sans: var(--font-latin), var(--font-deva), var(--font-beng), var(--font-taml), var(--font-telu), var(--font-gujr),
+    var(--font-knda), var(--font-mlym), var(--font-guru), system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", Arial, sans-serif;
+  background: #f5f7fb;
+  color: #111827;
+  font-family: var(--font-sans);
+  /* Indic scripts need more line height than Latin to keep matras readable */
+  line-height: 1.6;
+}
+
+/* Low-end phones: no smooth-scroll or heavy motion unless the user is fine with it */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* Leave room for the fixed bottom action bar on phones */
+.pb-action {
+  padding-bottom: calc(5.5rem + env(safe-area-inset-bottom));
+}
+@media (min-width: 768px) {
+  .pb-action {
+    padding-bottom: 2rem;
+  }
 }

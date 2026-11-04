@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import type { AdvisorExtraction } from "@udyam/shared";
-import { newSession, runTurn, type Brief, type Llm } from "./advisor.ts";
+import { ACCESS_LINKS, newSession, runTurn, type Brief, type Llm } from "./advisor.ts";
 import { checkReply, dominantScript, numbersIn } from "./guard.ts";
 import { httpServices } from "./services.ts";
 
@@ -66,6 +66,16 @@ test("clinic: asks, then recommends an eligible priced bundle within the turn bu
   for (const l of q.lines) assert.ok(el.eligible.some((p) => p.id === l.productId), `${l.productId} eligible`);
   assert.ok(q.lines.some((l) => l.productId === "P16" && l.quantity === 6), "email for every staff member");
   assert.ok(events.includes("advisor.profile.updated") && events.includes("bundle.recommended"));
+});
+
+test("interest in a fibre plan does not add a second access link to the bundle", { skip: !live }, async () => {
+  const msg = "physio clinic in Hyderabad, 5 staff, one branch, GSTIN, need reliable internet";
+  const llm = fakeLlm({ [msg]: { segment: "Professional offices", businessType: "Physiotherapy clinic", city: "Hyderabad", employeeCount: 5, numSites: 1, hasGstin: true, productsOfInterest: ["P01"] } });
+  const s = newSession("t-one-link");
+  const r = await runTurn(s, msg, { llm, services, emit });
+  assert.equal(r.brief.kind, "recommend");
+  const links = s.quote!.lines.filter((l) => ACCESS_LINKS.includes(l.productId));
+  assert.equal(links.length, 1, `one access link, got ${links.map((l) => l.productId)}`);
 });
 
 test("CA firm asking for a firewall gets it explained, not quoted", { skip: !live }, async () => {
