@@ -7,7 +7,8 @@
     "dev": "tsx watch src/index.ts",
     "start": "tsx src/index.ts",
     "typecheck": "tsc -p tsconfig.json",
-    "test": "node --import tsx --test src/*.test.ts"
+    "test": "node --import tsx --test src/*.test.ts",
+    "eval": "node --import tsx src/eval.ts"
   },
   "dependencies": {
     "@langchain/anthropic": "^1.6.0",

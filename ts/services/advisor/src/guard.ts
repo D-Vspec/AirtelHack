@@ -60,7 +60,9 @@ export interface GuardInput {
  */
 export function checkReply(g: GuardInput): string[] {
   const problems: string[] = [];
-  for (const n of numbersIn(g.reply)) {
+  let withoutNames = g.reply;
+  for (const name of g.catalogueNames) withoutNames = withoutNames.split(name).join(" "); // "Biz Fibre 100" is not a price
+  for (const n of numbersIn(withoutNames)) {
     if (n > 10 && !g.allowedNumbers.has(n)) problems.push(`number ${n} is not in the brief`);
   }
   const lower = g.reply.toLowerCase();
