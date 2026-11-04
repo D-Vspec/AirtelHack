@@ -1,5 +1,5 @@
 {
-  "_note": "Derived by us from OCR plus registry cross-checks; NOT the organizers' answer key. Routes marked assumed are our design choice. Phase 4 must also compare every remaining field across all 12 applicants and extend this file.",
+  "_note": "Derived by us from OCR plus registry cross-checks; NOT the organizers' answer key. Routes marked assumed are our design choice. Phase 4 compared every remaining field across all 12 applicants (docs/kyc-crosscheck.md) and found no further planted problems. Enforced by go/pkg/kyc TestTwelveApplicants and go/cmd/kyc TestLiveTwelveApplicants.",
   "referenceDate": "2026-07-15",
   "applicants": {
     "K01": {"finalRoute": "reject",        "assumed": false, "codes": ["GST_STATUS_CANCELLED", "FIELD_MISSING"], "note": "GSTIN 37IHKXV5167L1ZS is Cancelled; Udyam number field blank"},
@@ -11,7 +11,7 @@
     "K07": {"finalRoute": "manual_review", "assumed": true,  "codes": ["NAME_MISMATCH"], "note": "cert legal name says Prop. Shri Physio Clinic; registry, trade name and bill say Neelgiri"},
     "K08": {"finalRoute": "pass",          "assumed": false, "codes": [], "note": "clean control; GSTIN has letter O in position 4"},
     "K09": {"finalRoute": "pass",          "assumed": false, "codes": [], "note": "clean control"},
-    "K10": {"finalRoute": "pass",          "assumed": false, "codes": [], "note": "clean control; verify signatory (Nisha Arora) against LLP in Phase 4"},
+    "K10": {"finalRoute": "pass",          "assumed": false, "codes": [], "note": "clean control; signatory Nisha Arora (Owner) of an LLP cannot be verified: no partner list in the registry"},
     "K11": {"finalRoute": "reupload",      "assumed": false, "codes": ["DOC_STALE"], "note": "electricity bill dated 2025-10-31"},
     "K12": {"finalRoute": "pass",          "assumed": false, "codes": [], "note": "clean control"}
   }
