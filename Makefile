@@ -34,7 +34,7 @@ ps: ## container status
 	docker compose ps
 
 seed: ## load data/*.csv into Postgres (idempotent), then write docs/analytics.md
-	cd go && go run ./cmd/seed -data ../data
+	cd go && go run ./cmd/seed -data ../data && go run ./cmd/analytics -out ../docs/analytics.md
 
 smoke: ## end-to-end Phase 0 check (health + Kafka round trip)
 	./scripts/smoke.sh
