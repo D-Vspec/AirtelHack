@@ -118,7 +118,11 @@ services:
       PORT: "8090"
       RULES_URL: http://rules:8082
       QUOTE_URL: http://quote:8083
+      REGISTRY_URL: http://registry:8081
+      KAFKA_BROKERS: kafka:19092
     ports: ["8090:8090"]
+    depends_on:
+      kafka-init: { condition: service_completed_successfully }
 
 volumes:
   pgdata:
