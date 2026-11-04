@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 SVC ?=
 PHASE ?=
-.PHONY: help setup deps contracts up down logs ps seed smoke test typecheck package packs data-dictionary clean
+.PHONY: kyc-report help setup deps contracts up down logs ps seed smoke test typecheck package packs data-dictionary clean
 
 help: ## list targets
 	@grep -E '^[a-z-]+:.*##' Makefile | sed 's/:.*##/\t/' | column -t -s $$'\t'
@@ -58,3 +58,6 @@ data-dictionary: ## regenerate docs/data-dictionary.md
 
 clean: ## remove build output
 	rm -rf dist ts/apps/web/.next
+
+kyc-report: ## run the KYC pipeline on the 12 specimens and regenerate docs/kyc-crosscheck.md (needs tesseract)
+	cd go && go run ./cmd/kycreport -data ../data -out ../docs/kyc-crosscheck.md
