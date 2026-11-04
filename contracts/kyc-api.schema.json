@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "udyam/kyc-api",
+  "title": "KYC service HTTP shapes and event payloads",
+  "description": "kyc (go/cmd/kyc, port 8084, gateway /api/kyc). POST /consents, GET /consents/{leadId}, DELETE /consents/{leadId} (withdraw + purge); PUT /leads/{leadId}/documents/{docType} (raw image body, image/png or image/jpeg, max 10 MB; 403 CONSENT_REQUIRED without active consent) -> Document; POST /leads/{leadId}/check -> CheckResult; GET /leads/{leadId}/check -> latest CheckResult; GET /prefill/{gstin} -> Prefill; GET /reviews?status=open|closed -> Review[]; POST /reviews/{id}/decision -> Review. Finding codes, routes and messages: contracts/kyc-findings.json and contracts/kyc-messages.json. Go: go/pkg/kyc.",
+  "$defs": {
+    "ErrorCode": {"enum": ["INVALID_REQUEST", "CONSENT_REQUIRED", "UNKNOWN_DOCUMENT_TYPE", "UNSUPPORTED_IMAGE", "NO_DOCUMENTS", "NOT_FOUND", "REVIEW_CLOSED", "REGISTRY_UNAVAILABLE", "OCR_FAILED"]},
+    "Purpose": {"enum": ["kyc_verification", "service_activation"], "description": "kyc_verification is required before any upload"},
+    "ConsentRequest": {
+      "type": "object", "required": ["leadId", "purposes", "version"], "additionalProperties": false,
+      "properties": {"leadId": {"type": "string"}, "purposes": {"type": "array", "items": {"$ref": "#/$defs/Purpose"}, "minItems": 1}, "version": {"type": "string", "description": "Version of the consent text shown"}, "language": {"type": "string"}}
+    },
+    "Consent": {
+      "type": "object", "required": ["leadId", "purposes", "version", "grantedAt"],
+      "properties": {"leadId": {"type": "string"}, "purposes": {"type": "array", "items": {"$ref": "#/$defs/Purpose"}}, "version": {"type": "string"}, "language": {"type": "string"}, "grantedAt": {"type": "string", "format": "date-time"}, "withdrawnAt": {"type": ["string", "null"], "format": "date-time"}}
+    },
+    "Finding": {
+      "type": "object", "required": ["code", "severity", "route", "stage", "doc", "messageKey", "messages", "detail"],
+      "properties": {
+        "code": {"type": "string"}, "severity": {"type": "string"}, "route": {"type": "string"},
+        "stage": {"enum": ["completeness", "image_quality", "ocr", "registry", "name_match", "address_match", "document_age", "signatory_id"]},
+        "doc": {"type": "string"}, "messageKey": {"type": "string", "description": "kyc.<CODE>"},
+        "messages": {"type": "object", "additionalProperties": {"type": "string"}, "description": "language code -> owner-facing text, all 10 languages"},
+        "detail": {"type": "string", "description": "Reviewer-facing English; identifiers masked"}
+      }
+    },
+    "Document": {
+      "type": "object", "required": ["type", "findings", "sharpness", "skewDegrees"],
+      "properties": {"type": {"type": "string"}, "findings": {"type": "array", "items": {"$ref": "#/$defs/Finding"}}, "fields": {"type": "object", "additionalProperties": {"type": "string"}}, "sharpness": {"type": "number"}, "skewDegrees": {"type": "number"}}
+    },
+    "CheckResult": {
+      "type": "object", "required": ["id", "leadId", "route", "findings", "checkedAt"],
+      "properties": {
+        "id": {"type": "string"}, "leadId": {"type": "string"}, "route": {"enum": ["pass", "reupload", "manual_review", "reject"]},
+        "findings": {"type": "array", "items": {"$ref": "#/$defs/Finding"}},
+        "fields": {"type": "object", "description": "Parsed fields per document type, minus identifiers not needed after the check (signatory ID number, consumer number)"},
+        "reviewId": {"type": "string"}, "checkedAt": {"type": "string", "format": "date-time"}
+      }
+    },
+    "Prefill": {
+      "type": "object", "required": ["query", "matchType", "checksumValid"],
+      "properties": {"query": {"type": "string"}, "matchType": {"enum": ["exact", "corrected", "none"]}, "checksumValid": {"type": "boolean"}, "gstin": {"type": "string"}, "legalName": {"type": "string"}, "tradeName": {"type": "string"}, "constitution": {"type": "string"}, "address": {"type": "string"}, "state": {"type": "string"}, "status": {"type": "string"}, "suggestions": {"type": "array", "items": {"type": "string"}}}
+    },
+    "ReviewDecision": {
+      "type": "object", "required": ["decision", "reviewer"], "additionalProperties": false,
+      "properties": {"decision": {"enum": ["pass", "reupload", "reject"]}, "reviewer": {"type": "string"}, "note": {"type": "string"}}
+    },
+    "Review": {
+      "type": "object", "required": ["id", "checkId", "leadId", "status", "findings", "createdAt"],
+      "properties": {"id": {"type": "string"}, "checkId": {"type": "string"}, "leadId": {"type": "string"}, "status": {"enum": ["open", "closed"]}, "findings": {"type": "array", "items": {"$ref": "#/$defs/Finding"}}, "decision": {"type": "string"}, "reviewer": {"type": "string"}, "note": {"type": "string"}, "createdAt": {"type": "string"}, "decidedAt": {"type": "string"}}
+    },
+    "Events": {
+      "description": "Payloads (inside the envelope, key leadId). consent.recorded: Consent. consent.withdrawn: {leadId, withdrawnAt, purgedDocuments}. kyc.submitted: {leadId, checkId, documents: [docType]}. kyc.checked: {leadId, checkId, stage, findings: [{code, route, doc}]} once per stage with findings. kyc.passed / kyc.failed: {leadId, checkId, route, codes, decidedBy: 'pipeline'|'reviewer'}. kyc.review.requested: {leadId, checkId, reviewId, codes}."
+    }
+  }
+}
