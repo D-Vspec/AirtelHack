@@ -1,0 +1,5 @@
+# Containers and bash read these; keep LF even with core.autocrlf=true on Windows.
+*.sh text eol=lf
+*.sql text eol=lf
+infra/** text eol=lf
+Makefile text eol=lf
