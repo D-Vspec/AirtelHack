@@ -123,3 +123,12 @@ test("out-of-scope question gets no products", { skip: !live }, async () => {
   assert.equal(r.brief.kind, "out_of_scope");
   assert.equal(s.quote, undefined);
 });
+
+test("romanised comes from the message script, not the extractor", { skip: !live }, async () => {
+  const llm = fakeLlm({ "வணக்கம், சென்னையில் பல் மருத்துவமனை": { language: "Tamil", romanised: true }, "vanakkam, chennai-la clinic": { language: "Tamil", romanised: false } });
+  const s = newSession("t-script");
+  await runTurn(s, "வணக்கம், சென்னையில் பல் மருத்துவமனை", { llm, services, emit });
+  assert.equal(s.romanised, false);
+  await runTurn(s, "vanakkam, chennai-la clinic", { llm, services, emit });
+  assert.equal(s.romanised, true);
+});

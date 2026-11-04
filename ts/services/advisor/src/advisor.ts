@@ -3,7 +3,7 @@ import {
   type Bundle, type BundleRecommendedPayload, type Exclusion, type LanguageName, type Product,
   type ProfileUpdatedPayload, type Quote, type QuoteItem,
 } from "@udyam/shared";
-import { checkReply, numbersInValue } from "./guard.ts";
+import { checkReply, dominantScript, numbersInValue } from "./guard.ts";
 import { ServiceCallError, type Services } from "./services.ts";
 
 /**
@@ -154,7 +154,10 @@ export async function runTurn(state: SessionState, message: string, deps: Deps):
   const ext = await llm.extract({ history: state.history, message, profile: state.profile, catalogue: catalogue.map((p) => ({ id: p.id, name: p.name })) });
   state.history.push({ role: "owner", text: message });
   state.language = ext.language;
-  state.romanised = ext.language !== "English" && ext.romanised;
+  // Romanised is read from the message's script, not the LLM (DeepSeek flagged Tamil script as romanised).
+  // A message without letters ("6") keeps the previous setting.
+  const latin = /\p{L}/u.test(message) ? dominantScript(message) === "Latin" : state.romanised;
+  state.romanised = ext.language !== "English" && latin;
   if (!state.profile.preferredLanguage) state.profile = { ...state.profile, preferredLanguage: ext.language };
 
   const prevGstin = state.profile.gstin;
