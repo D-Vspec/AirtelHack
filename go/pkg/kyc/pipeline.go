@@ -84,6 +84,51 @@ func finding(code, stage, doc, detail string) Finding {
 		MessageKey: "kyc." + code, Messages: msgs, Detail: detail}
 }
 
+// Document is what one upload yields on its own: quality and OCR findings plus parsed fields.
+// It is the live feedback shown while the owner is still capturing documents.
+type Document struct {
+	Type        string    `json:"type"`
+	Findings    []Finding `json:"findings"`
+	Fields      Fields    `json:"fields,omitempty"`
+	Sharpness   float64   `json:"sharpness"`
+	SkewDegrees float64   `json:"skewDegrees"`
+}
+
+// key fields that must be readable per document type
+var keyField = map[string]string{DocGST: "gstin", DocUdyam: "udyamNumber", DocAddress: "billDate", DocSignatory: "name"}
+
+// ReadDocument runs image_quality (blur gate, deskew) and ocr (parse, key-field check) on one document.
+func (c Checker) ReadDocument(ctx context.Context, docType string, img image.Image) (Document, error) {
+	doc := Document{Type: docType, Findings: []Finding{}}
+	g := Gray(img)
+	doc.Sharpness = Sharpness(g)
+	if doc.Sharpness < c.MinSharpness {
+		doc.Findings = append(doc.Findings, finding(events.FindingImageBlurry, "image_quality", docType, fmt.Sprintf("sharpness %.1f below %.0f", doc.Sharpness, c.MinSharpness)))
+		return doc, nil
+	}
+	if sk := SkewDegrees(g, 15); sk >= c.MinSkewDegrees || sk <= -c.MinSkewDegrees {
+		doc.SkewDegrees = sk
+		doc.Findings = append(doc.Findings, finding(events.FindingImageSkewed, "image_quality", docType, fmt.Sprintf("skewed %.2f°, deskewed before OCR", sk)))
+		g = Rotate(g, sk)
+	}
+	text, err := c.OCR(ctx, g)
+	if err != nil {
+		return doc, err
+	}
+	doc.Fields = ParseFields(docType, text)
+	// A key field printed blank is FIELD_MISSING; one OCR cannot read is OCR_LOW_CONFIDENCE.
+	v, present := doc.Fields[keyField[docType]]
+	switch {
+	case present && strings.TrimSpace(v) == "" && docType == DocUdyam:
+		doc.Findings = append(doc.Findings, finding(events.FindingFieldMissing, "ocr", docType, "Udyam registration number is blank"))
+	case !present || strings.TrimSpace(v) == "",
+		docType == DocGST && GSTINText(v) == "",
+		docType == DocAddress && Date(v) == "":
+		doc.Findings = append(doc.Findings, finding(events.FindingOcrLowConfidence, "ocr", docType, "could not read "+keyField[docType]))
+	}
+	return doc, nil
+}
+
 // Check runs every stage on one applicant's documents (keyed by document type).
 // Errors are infrastructure failures (OCR binary, registry down), not findings.
 func (c Checker) Check(ctx context.Context, docs map[string]image.Image) (Result, error) {
@@ -97,46 +142,24 @@ func (c Checker) Check(ctx context.Context, docs map[string]image.Image) (Result
 		}
 	}
 
-	// image_quality, then ocr on what is readable
+	// image_quality and ocr, per document
 	for _, d := range RequiredDocs {
 		if docs[d] == nil {
 			continue
 		}
-		g := Gray(docs[d])
-		if s := Sharpness(g); s < c.MinSharpness {
-			add(finding(events.FindingImageBlurry, "image_quality", d, fmt.Sprintf("sharpness %.1f below %.0f", s, c.MinSharpness)))
-			continue
-		}
-		if sk := SkewDegrees(g, 15); sk >= c.MinSkewDegrees || sk <= -c.MinSkewDegrees {
-			res.Skew[d] = sk
-			add(finding(events.FindingImageSkewed, "image_quality", d, fmt.Sprintf("skewed %.2f°, deskewed before OCR", sk)))
-			g = Rotate(g, sk)
-		}
-		text, err := c.OCR(ctx, g)
+		doc, err := c.ReadDocument(ctx, d, docs[d])
 		if err != nil {
 			return res, err
 		}
-		res.Fields[d] = ParseFields(d, text)
+		res.Findings = append(res.Findings, doc.Findings...)
+		if doc.Fields != nil {
+			res.Fields[d] = doc.Fields
+		}
+		if doc.SkewDegrees != 0 {
+			res.Skew[d] = doc.SkewDegrees
+		}
 	}
 	gst, udy, bill, sig := res.Fields[DocGST], res.Fields[DocUdyam], res.Fields[DocAddress], res.Fields[DocSignatory]
-
-	// ocr: key fields must be readable; a key field printed blank is FIELD_MISSING.
-	key := map[string]string{DocGST: "gstin", DocUdyam: "udyamNumber", DocAddress: "billDate", DocSignatory: "name"}
-	for _, d := range RequiredDocs {
-		f := res.Fields[d]
-		if f == nil {
-			continue
-		}
-		v, present := f[key[d]]
-		switch {
-		case present && strings.TrimSpace(v) == "" && d == DocUdyam:
-			add(finding(events.FindingFieldMissing, "ocr", d, "Udyam registration number is blank"))
-		case !present || strings.TrimSpace(v) == "",
-			d == DocGST && GSTINText(v) == "",
-			d == DocAddress && Date(v) == "":
-			add(finding(events.FindingOcrLowConfidence, "ocr", d, "could not read "+key[d]))
-		}
-	}
 
 	// registry: GSTIN (checksum, existence, status) and Udyam number
 	if g := GSTINText(gst["gstin"]); g != "" {
