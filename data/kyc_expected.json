@@ -1,9 +1,24 @@
 {
-  "_note": "Derived by us from OCR plus registry cross-checks; NOT the organizers' answer key. Routes marked assumed are our design choice. Phase 4 must also compare every remaining field across all 12 applicants and extend this file.",
+  "_note": "Derived by us from OCR plus registry cross-checks; NOT the organizers' answer key. Routes marked assumed are our design choice. Phase 4 compared every field across all 12 applicants (docs/kyc-findings.md); fieldsCompared and furtherDiscrepancies record the result. go/pkg/kyc TestSpecimenExpectations checks finalRoute and codes for every applicant.",
   "referenceDate": "2026-07-15",
+  "fieldsCompared": [
+    "GST certificate vs GSTIN registry: GSTIN (checksum + registry), legal name (business and proprietor), trade name, constitution, address, date of liability vs registration date, status",
+    "Udyam certificate vs Udyam registry: number, enterprise name, major activity, city, state, date of registration",
+    "Electricity bill vs GSTIN registry: billed-to name, supply address, bill date (90 days before referenceDate)",
+    "Signatory ID: name vs proprietor (proprietorships), business name, designation, ID number present, valid till vs referenceDate"
+  ],
+  "furtherDiscrepancies": [
+    {"applicants": ["K02", "K03", "K04", "K06", "K07", "K08", "K09", "K10", "K11", "K12"], "field": "Udyam date of registration", "finding": "certificate date differs from registry date for every applicant where both exist", "treatment": "not checked: generator noise; ask the organizers"},
+    {"applicants": ["K06", "K10", "K11", "K12"], "field": "Udyam major activity", "finding": "certificate says Services, registry says Trading", "treatment": "not checked: generator noise; ask the organizers"},
+    {"applicants": ["K01", "K08", "K09"], "field": "Signatory designation", "finding": "proprietorship signatory designated 'Office admin', although the name is the proprietor's", "treatment": "pass: name matches the registered proprietor"},
+    {"applicants": ["K02", "K07"], "field": "Signatory designation", "finding": "proprietorship signatory designated 'Manager', although the name is the proprietor's", "treatment": "pass: name matches the registered proprietor"},
+    {"applicants": ["K05", "K10", "K11"], "field": "Signatory designation", "finding": "LLP or private company signatory designated 'Owner'; the registry has no partner or director list, so the name cannot be verified", "treatment": "not flagged; production needs an authorisation letter or MCA partner/director lookup"},
+    {"applicants": ["K05"], "field": "Udyam registry", "finding": "no certificate submitted, but the registry has UDYAM-KL-00-5521886 for Balaji Realty LLP, Kochi", "treatment": "DOC_MISSING stands; the owner could type the number instead of uploading (prefill)"},
+    {"applicants": ["K02", "K03", "K07", "K08", "K10"], "field": "GSTIN", "finding": "OCR cannot tell letter O from digit 0 in the certificate font; resolved by checksum plus registry correction", "treatment": "silent correction, recorded as gstinMatchType=corrected"}
+  ],
   "applicants": {
     "K01": {"finalRoute": "reject",        "assumed": false, "codes": ["GST_STATUS_CANCELLED", "FIELD_MISSING"], "note": "GSTIN 37IHKXV5167L1ZS is Cancelled; Udyam number field blank"},
-    "K02": {"finalRoute": "pass",          "assumed": false, "codes": ["IMAGE_SKEWED"], "note": "GST certificate skewed ~6 degrees; GSTIN contains letter O not zero"},
+    "K02": {"finalRoute": "pass",          "assumed": false, "codes": ["IMAGE_SKEWED"], "note": "GST certificate skewed ~7 degrees and straightened; GSTIN contains letter O not zero"},
     "K03": {"finalRoute": "pass",          "assumed": false, "codes": [], "note": "clean control"},
     "K04": {"finalRoute": "reupload",      "assumed": false, "codes": ["IMAGE_BLURRY"], "note": "GST certificate heavily blurred"},
     "K05": {"finalRoute": "reupload",      "assumed": false, "codes": ["DOC_MISSING"], "note": "no Udyam certificate submitted"},
@@ -11,7 +26,7 @@
     "K07": {"finalRoute": "manual_review", "assumed": true,  "codes": ["NAME_MISMATCH"], "note": "cert legal name says Prop. Shri Physio Clinic; registry, trade name and bill say Neelgiri"},
     "K08": {"finalRoute": "pass",          "assumed": false, "codes": [], "note": "clean control; GSTIN has letter O in position 4"},
     "K09": {"finalRoute": "pass",          "assumed": false, "codes": [], "note": "clean control"},
-    "K10": {"finalRoute": "pass",          "assumed": false, "codes": [], "note": "clean control; verify signatory (Nisha Arora) against LLP in Phase 4"},
+    "K10": {"finalRoute": "pass",          "assumed": false, "codes": [], "note": "clean control; signatory Nisha Arora ('Owner') cannot be verified against LLP partners (no partner data)"},
     "K11": {"finalRoute": "reupload",      "assumed": false, "codes": ["DOC_STALE"], "note": "electricity bill dated 2025-10-31"},
     "K12": {"finalRoute": "pass",          "assumed": false, "codes": [], "note": "clean control"}
   }
