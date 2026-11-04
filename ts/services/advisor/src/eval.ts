@@ -43,6 +43,7 @@ async function runScenario(s: EvalScenario, llm: ReturnType<typeof advisorLlm>, 
     const r = await runTurn(state, msg, { llm, services, emit });
     turns.push(r);
     if (state.quote && quotes.at(-1)?.id !== state.quote.id) quotes.push(state.quote);
+    if (r.brief.kind === "error") notes.push(`turn ${state.turn}: service error (${String(r.brief.facts.error)})`);
     if (r.guardProblems.length) notes.push(`turn ${state.turn}: guard fallback (${r.guardProblems.join("; ")})`);
   }
   const checks = {} as Record<Check, boolean>;

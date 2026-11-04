@@ -51,9 +51,14 @@ export async function createChatModel(env: Env = process.env): Promise<BaseChatM
       return new ChatOpenAI({ model, apiKey: env.OPENAI_API_KEY, temperature: 0 });
     }
     case "deepseek": {
-      // OpenAI-compatible API. Default deepseek-flash = DeepSeek-V4.1-Flash.
+      // OpenAI-compatible API. Default deepseek-flash = DeepSeek-V4.1-Flash. Thinking mode rejects the
+      // forced tool_choice extraction needs, and short extraction/phrasing doesn't need it: disabled.
       const { ChatOpenAI } = await import("@langchain/openai");
-      return new ChatOpenAI({ model: model ?? "deepseek-flash", apiKey: env.DEEPSEEK_API_KEY, temperature: 0, configuration: { baseURL: env.DEEPSEEK_BASE_URL || "https://api.deepseek.com" } });
+      return new ChatOpenAI({
+        model: model ?? "deepseek-flash", apiKey: env.DEEPSEEK_API_KEY, temperature: 0,
+        configuration: { baseURL: env.DEEPSEEK_BASE_URL || "https://api.deepseek.com" },
+        modelKwargs: { thinking: { type: "disabled" } },
+      });
     }
     default:
       throw new Error(`Unknown LLM_PROVIDER "${provider}" (use gemini | anthropic | openai | deepseek)`);
