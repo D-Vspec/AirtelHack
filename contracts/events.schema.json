@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "udyam/events/envelope",
+  "title": "EventEnvelope",
+  "type": "object",
+  "required": ["id", "type", "version", "occurredAt", "correlationId", "payload"],
+  "properties": {
+    "id": {"type": "string", "description": "UUID v4, unique per event; consumers dedupe on it"},
+    "type": {"type": "string", "description": "Topic name, e.g. quote.accepted"},
+    "version": {"type": "integer", "minimum": 1},
+    "occurredAt": {"type": "string", "format": "date-time"},
+    "leadId": {"type": "string", "description": "Partition key for lead-scoped topics"},
+    "correlationId": {"type": "string", "description": "Ties together every event of one owner journey"},
+    "payload": {"type": "object"}
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,7 @@
+Goal: a conversational advisor in TypeScript at ts/services/advisor.
+1. Conversation graph that collects the profile (business type, city, employees, sites, GSTIN yes/no, current internet and provider, products of interest, preferred language) in as few turns as possible, with structured extraction using zod schemas from ts/packages/shared.
+2. Tools: call the rules service for eligibility and the quote service for pricing. The model may only recommend products the tools returned, and must explain in the owner's language (the ten languages in smb_leads.preferred_language: English, Hindi, Bengali, Telugu, Marathi, Tamil, Gujarati, Kannada, Malayalam, Punjabi; plus code-mixed input such as Hinglish or Tanglish).
+3. Provider switch via LLM_PROVIDER (gemini, anthropic, openai) with identical prompts; ts/services/advisor/src/llm.ts already provides createChatModel. Build an eval harness (`pnpm eval`) with 15+ scripted scenarios and 10 multilingual conversations. Score: no ineligible product recommended, dependencies respected, price equals quote-service price, correct language, recommendation within 6 turns.
+4. Guardrails: never invent products or prices; handle 'just a mobile plan', 'too expensive' (offer a cheaper tier with total cost), unknown GSTIN, and out-of-scope questions.
+5. Emit advisor.profile.updated and bundle.recommended.
+Done when: eval pass rate is at least 90% on each provider you can test, with the results table saved in docs/advisor-eval.md.

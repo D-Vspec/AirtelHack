@@ -1,0 +1,22 @@
+{
+  "routes": ["pass", "reupload", "manual_review", "reject"],
+  "severities": ["info", "warning", "error"],
+  "documentTypes": ["gst_certificate", "udyam_certificate", "address_proof", "signatory_id"],
+  "findings": [
+    {"code": "DOC_MISSING",              "severity": "error",   "route": "reupload",      "description": "A required document was not submitted"},
+    {"code": "FIELD_MISSING",            "severity": "error",   "route": "reupload",      "description": "A required field is blank on the document (e.g. Udyam number)"},
+    {"code": "IMAGE_BLURRY",             "severity": "error",   "route": "reupload",      "description": "Image too blurry to read reliably"},
+    {"code": "IMAGE_SKEWED",             "severity": "info",    "route": "pass",          "description": "Image was skewed and automatically corrected"},
+    {"code": "OCR_LOW_CONFIDENCE",       "severity": "warning", "route": "reupload",      "description": "OCR could not read a key field with confidence"},
+    {"code": "GSTIN_CHECKSUM_INVALID",   "severity": "error",   "route": "manual_review", "description": "GSTIN fails the mod-36 checksum or differs from the closest registry entry"},
+    {"code": "GSTIN_NOT_FOUND",          "severity": "error",   "route": "manual_review", "description": "GSTIN not present in the registry"},
+    {"code": "GST_STATUS_CANCELLED",     "severity": "error",   "route": "reject",        "description": "GST registration is Cancelled"},
+    {"code": "GST_STATUS_SUSPENDED",     "severity": "error",   "route": "reject",        "description": "GST registration is Suspended"},
+    {"code": "UDYAM_NOT_FOUND",          "severity": "error",   "route": "manual_review", "description": "Udyam number not present in the registry"},
+    {"code": "NAME_MISMATCH",            "severity": "error",   "route": "manual_review", "description": "Business or proprietor name differs across documents or registry"},
+    {"code": "ADDRESS_MISMATCH",         "severity": "error",   "route": "manual_review", "description": "Address differs across documents or registry"},
+    {"code": "DOC_STALE",                "severity": "error",   "route": "reupload",      "description": "Address proof older than 90 days at the KYC reference date"},
+    {"code": "ID_EXPIRED",               "severity": "error",   "route": "reupload",      "description": "Signatory ID is expired"},
+    {"code": "SIGNATORY_NOT_AUTHORISED", "severity": "error",   "route": "manual_review", "description": "Signatory name does not match the proprietor or an authorised partner"}
+  ]
+}

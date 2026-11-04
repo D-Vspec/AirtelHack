@@ -1,0 +1,16 @@
+{
+  "name": "udyam-ts",
+  "private": true,
+  "version": "0.0.0",
+  "packageManager": "pnpm@12.16.1",
+  "scripts": {
+    "typecheck": "pnpm -r --if-present typecheck",
+    "test": "pnpm -r --if-present test",
+    "dev:web": "pnpm --filter @udyam/web dev",
+    "dev:advisor": "pnpm --filter @udyam/advisor dev",
+    "dev:mobile": "pnpm --filter @udyam/mobile start"
+  },
+  "devDependencies": {
+    "typescript": "~6.0.3"
+  }
+}

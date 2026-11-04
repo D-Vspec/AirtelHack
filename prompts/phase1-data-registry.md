@@ -1,0 +1,6 @@
+Goal: load all case data into Postgres and expose registry lookups.
+1. Add migrations creating schemas leads, catalogue and registry, with tables for smb_leads, product_catalogue, and the GSTIN and Udyam registries from data/*.csv. Write an idempotent Go loader (cmd/seed) and a `make seed` target.
+2. Build the registry service (cmd/registry): GET /gstin/{id} and GET /udyam/{id} returning status, legal and trade names and address. Implement the GSTIN mod-36 checksum. Add fuzzy resolution that corrects OCR confusions (O/0, I/1, 5/S, 8/B, J/I, T/I) by trying substitutions against the registry, returning matchType (exact, corrected, none) and checksumValid.
+3. Create SQL views leads.v_funnel, v_segment_perf and v_drop_reasons, and a script that writes docs/analytics.md with: funnel by stage; conversion, CAC, bundle value, churn and NPS by segment and by source; drop reasons grouped into fixable by digital, pricing, and out of scope.
+4. Tests: every registry GSTIN passes the checksum; the K01-K12 certificate GSTINs in docs/kyc-findings.md resolve exactly as documented (K06 fails checksum, K01 resolves to a Cancelled record).
+Done when: `make seed` works from an empty database, endpoints are tested, and docs/analytics.md contains the tables.

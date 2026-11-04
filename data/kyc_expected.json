@@ -1,0 +1,18 @@
+{
+  "_note": "Derived by us from OCR plus registry cross-checks; NOT the organizers' answer key. Routes marked assumed are our design choice. Phase 4 must also compare every remaining field across all 12 applicants and extend this file.",
+  "referenceDate": "2026-07-15",
+  "applicants": {
+    "K01": {"finalRoute": "reject",        "assumed": false, "codes": ["GST_STATUS_CANCELLED", "FIELD_MISSING"], "note": "GSTIN 37IHKXV5167L1ZS is Cancelled; Udyam number field blank"},
+    "K02": {"finalRoute": "pass",          "assumed": false, "codes": ["IMAGE_SKEWED"], "note": "GST certificate skewed ~6 degrees; GSTIN contains letter O not zero"},
+    "K03": {"finalRoute": "pass",          "assumed": false, "codes": [], "note": "clean control"},
+    "K04": {"finalRoute": "reupload",      "assumed": false, "codes": ["IMAGE_BLURRY"], "note": "GST certificate heavily blurred"},
+    "K05": {"finalRoute": "reupload",      "assumed": false, "codes": ["DOC_MISSING"], "note": "no Udyam certificate submitted"},
+    "K06": {"finalRoute": "manual_review", "assumed": true,  "codes": ["GSTIN_CHECKSUM_INVALID"], "note": "cert 08YKZXS8189L1ZO vs registry 08YKZXS5189L1ZO (one digit)"},
+    "K07": {"finalRoute": "manual_review", "assumed": true,  "codes": ["NAME_MISMATCH"], "note": "cert legal name says Prop. Shri Physio Clinic; registry, trade name and bill say Neelgiri"},
+    "K08": {"finalRoute": "pass",          "assumed": false, "codes": [], "note": "clean control; GSTIN has letter O in position 4"},
+    "K09": {"finalRoute": "pass",          "assumed": false, "codes": [], "note": "clean control"},
+    "K10": {"finalRoute": "pass",          "assumed": false, "codes": [], "note": "clean control; verify signatory (Nisha Arora) against LLP in Phase 4"},
+    "K11": {"finalRoute": "reupload",      "assumed": false, "codes": ["DOC_STALE"], "note": "electricity bill dated 2025-10-31"},
+    "K12": {"finalRoute": "pass",          "assumed": false, "codes": [], "note": "clean control"}
+  }
+}

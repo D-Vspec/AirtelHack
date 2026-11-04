@@ -1,0 +1,8 @@
+Goal: the KYC service (go/cmd/kyc).
+1. Consent first: POST /consents records purpose-limited consent (purposes, timestamp, version) and blocks uploads without it. Withdrawal purges documents and emits consent.withdrawn.
+2. Per-applicant pipeline. Each stage returns a typed finding (codes in contracts/kyc-findings.json) with message keys for every supported language and a route (reupload, manual_review, reject, pass): completeness (GST certificate, Udyam certificate, address proof, signatory ID); image quality (blur by Laplacian variance, skew detection with deskew); OCR (tesseract CLI in the container, with GSTIN and Udyam numbers corrected through checksum plus registry fuzzy match); GSTIN status (Cancelled or Suspended); cross-document name match (legal, trade, registry, bill, signatory); address match; document age (bill within 90 days of KYC_REFERENCE_DATE=2026-07-15); signatory ID validity.
+3. Prefill: after a GSTIN lookup, return registry data so the owner uploads less.
+4. Review queue API for manual_review cases, emitting kyc.review.requested.
+5. Tests from data/kyc_expected.json: K01 cancelled GSTIN and blank Udyam number; K02 skewed; K04 blurred; K05 missing Udyam; K06 invalid checksum; K07 legal-name mismatch; K11 stale bill; K03, K08, K09, K10, K12 must pass. Also compare every remaining field across all 12 applicants and document any further discrepancy, extending data/kyc_expected.json.
+6. Mask identifiers in logs, store only necessary fields, make retention configurable, and write docs/privacy-note-draft.md (data collected, purpose, retention, deletion).
+Done when: the 12-applicant expectation table passes automatically.

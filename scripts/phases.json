@@ -1,0 +1,11 @@
+[
+  {"n": 0, "slug": "foundation"},
+  {"n": 1, "slug": "data-registry"},
+  {"n": 2, "slug": "rules-quote"},
+  {"n": 3, "slug": "advisor"},
+  {"n": 4, "slug": "kyc"},
+  {"n": 5, "slug": "orders-tracker"},
+  {"n": 6, "slug": "frontends"},
+  {"n": 7, "slug": "scoring-handoff"},
+  {"n": 8, "slug": "submission"}
+]
