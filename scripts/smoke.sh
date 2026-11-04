@@ -20,7 +20,16 @@ MSG="smoke-$(date +%s)"
 ID=$(curl -fsS -X POST "$GW/api/system/ping" -H 'Content-Type: application/json' -d "{\"message\":\"$MSG\"}" | sed -E 's/.*"id":"([^"]+)".*/\1/')
 [ -n "$ID" ] || { echo "no event id returned"; exit 1; }
 for i in $(seq 1 20); do
-  curl -fsS "$GW/api/notify/pings" | grep -q "$ID" && { echo "SMOKE OK: event $ID consumed and stored"; exit 0; }
+  curl -fsS "$GW/api/notify/pings" | grep -q "$ID" && { echo "   event $ID consumed and stored"; break; }
+  [ "$i" = 20 ] && { echo "SMOKE FAILED: event $ID was not consumed within 20s (check: docker compose logs notify kafka)"; exit 1; }
   sleep 1
 done
-echo "SMOKE FAILED: event $ID was not consumed within 20s (check: docker compose logs notify kafka)"; exit 1
+
+# Registry lookup needs `make seed`; an unseeded database answers 503 and is skipped, not failed.
+REG=$(curl -s -w ' %{http_code}' "$GW/api/registry/gstin/37IHKXV5167L1ZS")
+case "$REG" in
+  *' 503') echo "   registry not seeded (run make seed); lookup check skipped" ;;
+  *'"status":"Cancelled"'*' 200') echo "   registry lookup ok" ;;
+  *) echo "SMOKE FAILED: registry lookup: $REG"; exit 1 ;;
+esac
+echo "SMOKE OK"
