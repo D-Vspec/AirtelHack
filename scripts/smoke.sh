@@ -32,4 +32,20 @@ case "$REG" in
   *'"status":"Cancelled"'*' 200') echo "   registry lookup ok" ;;
   *) echo "SMOKE FAILED: registry lookup: $REG"; exit 1 ;;
 esac
+
+# KYC: uploads are refused without consent; with consent, clean specimen K03 passes (needs make seed).
+DOCS="$(cd "$(dirname "$0")/.." && pwd)/data/kyc_documents"
+LEAD="smoke-kyc-$(date +%s)"
+CODE=$(curl -s -o /dev/null -w '%{http_code}' -X PUT --data-binary @"$DOCS/K03_gst_certificate.png" "$GW/api/kyc/leads/$LEAD/documents/gst_certificate")
+[ "$CODE" = 403 ] || { echo "SMOKE FAILED: KYC upload without consent answered $CODE, want 403"; exit 1; }
+curl -fsS -X POST "$GW/api/kyc/consents" -H 'Content-Type: application/json' -d "{\"leadId\":\"$LEAD\",\"purposes\":[\"kyc_verification\"],\"version\":\"v1\"}" >/dev/null
+for d in gst_certificate udyam_certificate address_proof signatory_id; do
+  curl -fsS -X PUT --data-binary @"$DOCS/K03_$d.png" "$GW/api/kyc/leads/$LEAD/documents/$d" >/dev/null || { echo "SMOKE FAILED: KYC upload $d"; exit 1; }
+done
+KYC=$(curl -s -w ' %{http_code}' -X POST "$GW/api/kyc/leads/$LEAD/check")
+case "$KYC" in
+  *' 503') echo "   KYC check skipped (registry not seeded)" ;;
+  *'"route":"pass"'*' 200') echo "   KYC consent, upload and check ok (K03 pass)" ;;
+  *) echo "SMOKE FAILED: KYC check: $KYC"; exit 1 ;;
+esac
 echo "SMOKE OK"
