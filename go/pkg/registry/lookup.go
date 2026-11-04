@@ -1,6 +1,65 @@
-package main
+// Package registry resolves GSTIN and Udyam numbers against the mock registries (exact, OCR-corrected, near-miss).
+package registry
 
-import "strings"
+import (
+	"encoding/csv"
+	"os"
+	"strings"
+)
+
+type GSTIN struct {
+	GSTIN            string `json:"gstin" db:"gstin"`
+	LegalName        string `json:"legalName" db:"legal_name"`
+	TradeName        string `json:"tradeName" db:"trade_name"`
+	Constitution     string `json:"constitution" db:"constitution"`
+	Address          string `json:"address" db:"principal_place_of_business"`
+	State            string `json:"state" db:"state"`
+	RegistrationDate string `json:"registrationDate" db:"registration_date"`
+	Status           string `json:"status" db:"status"`
+}
+
+type Udyam struct {
+	UdyamNumber        string `json:"udyamNumber" db:"udyam_number"`
+	EnterpriseName     string `json:"enterpriseName" db:"enterprise_name"`
+	EnterpriseType     string `json:"enterpriseType" db:"enterprise_type"`
+	MajorActivity      string `json:"majorActivity" db:"major_activity"`
+	NICDescription     string `json:"nicDescription" db:"nic_description"`
+	State              string `json:"state" db:"state"`
+	City               string `json:"city" db:"city"`
+	DateOfRegistration string `json:"dateOfRegistration" db:"date_of_registration"`
+}
+
+// LoadCSV reads the registry CSVs in data/ (tests and offline tools; the service loads from Postgres).
+func LoadCSV(gstinPath, udyamPath string) (*Index[GSTIN], *Index[Udyam], error) {
+	read := func(p string) ([][]string, error) {
+		f, err := os.Open(p)
+		if err != nil {
+			return nil, err
+		}
+		defer f.Close()
+		rows, err := csv.NewReader(f).ReadAll()
+		if len(rows) > 0 {
+			rows = rows[1:]
+		}
+		return rows, err
+	}
+	gr, err := read(gstinPath)
+	if err != nil {
+		return nil, nil, err
+	}
+	ur, err := read(udyamPath)
+	if err != nil {
+		return nil, nil, err
+	}
+	g, u := map[string]GSTIN{}, map[string]Udyam{}
+	for _, r := range gr {
+		g[r[0]] = GSTIN{r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7]}
+	}
+	for _, r := range ur {
+		u[r[0]] = Udyam{r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7]}
+	}
+	return NewIndex(g), NewIndex(u), nil
+}
 
 const gstinAlphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
