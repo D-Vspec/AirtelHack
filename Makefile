@@ -33,8 +33,8 @@ logs: ## follow logs; SVC=notify to filter
 ps: ## container status
 	docker compose ps
 
-seed: ## Phase 1 implements go/cmd/seed
-	@echo "Not implemented yet: Phase 1 adds go/cmd/seed and wires this target."
+seed: ## load data/*.csv into Postgres (idempotent), then write docs/analytics.md
+	cd go && go run ./cmd/seed -data ../data
 
 smoke: ## end-to-end Phase 0 check (health + Kafka round trip)
 	./scripts/smoke.sh
