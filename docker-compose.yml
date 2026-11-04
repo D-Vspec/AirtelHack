@@ -93,7 +93,7 @@ services:
   kyc:
     <<: *go-service
     build: { context: ./go, args: { SERVICE: kyc } }
-    environment: { <<: *go-env, PORT: "8084" }
+    environment: { <<: *go-env, PORT: "8084", REGISTRY_URL: "http://registry:8081", KYC_RETENTION_DAYS: "${KYC_RETENTION_DAYS:-30}" }
     volumes: ["./data/kyc_documents:/data/kyc_documents:ro"]
   tracker:
     <<: *go-service
