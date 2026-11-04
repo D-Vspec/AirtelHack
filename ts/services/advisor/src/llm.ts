@@ -6,8 +6,9 @@ import { extractionPrompt, writerPrompt } from "./prompts.ts";
 
 /** Advisor LLM roles on top of any LangChain chat model: structured extraction and reply writing. */
 export function advisorLlm(model: BaseChatModel, env: Env = process.env): Llm {
-  // DeepSeek rejects response_format json_schema (ChatOpenAI's default), so use tool calling there.
-  const method = env.LLM_PROVIDER === "deepseek" ? "functionCalling" : undefined;
+  // ChatOpenAI defaults to strict response_format json_schema: OpenAI rejects it (every key must be
+  // required, ours are optional) and DeepSeek doesn't support it. Tool calling works for both.
+  const method = ["openai", "deepseek"].includes(env.LLM_PROVIDER ?? "") ? "functionCalling" : undefined;
   const extractor = model.withStructuredOutput(AdvisorExtraction, { name: "extract_profile", method });
   return {
     async extract(input) {
@@ -50,9 +51,9 @@ export async function createChatModel(env: Env = process.env): Promise<BaseChatM
       return new ChatOpenAI({ model, apiKey: env.OPENAI_API_KEY, temperature: 0 });
     }
     case "deepseek": {
-      // OpenAI-compatible API. deepseek-reasoner has no tool calling, so it cannot do extraction.
+      // OpenAI-compatible API. Default deepseek-flash = DeepSeek-V4.1-Flash.
       const { ChatOpenAI } = await import("@langchain/openai");
-      return new ChatOpenAI({ model: model ?? "deepseek-chat", apiKey: env.DEEPSEEK_API_KEY, temperature: 0, configuration: { baseURL: env.DEEPSEEK_BASE_URL || "https://api.deepseek.com" } });
+      return new ChatOpenAI({ model: model ?? "deepseek-flash", apiKey: env.DEEPSEEK_API_KEY, temperature: 0, configuration: { baseURL: env.DEEPSEEK_BASE_URL || "https://api.deepseek.com" } });
     }
     default:
       throw new Error(`Unknown LLM_PROVIDER "${provider}" (use gemini | anthropic | openai | deepseek)`);

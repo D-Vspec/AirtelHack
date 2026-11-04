@@ -107,7 +107,7 @@ async function pool<T, R>(items: T[], n: number, fn: (t: T) => Promise<R>): Prom
 async function main() {
   const provider = process.env.LLM_PROVIDER ?? "gemini";
   const model = await createChatModel();
-  const modelName = process.env.LLM_MODEL || ({ anthropic: "claude-sonnet-5-5", deepseek: "deepseek-chat" }[provider] ?? "?");
+  const modelName = process.env.LLM_MODEL || ({ anthropic: "claude-sonnet-5-5", deepseek: "deepseek-flash" }[provider] ?? "?");
   const llm = advisorLlm(model);
   const catalogue = new Map((await services.products()).map((p) => [p.id, p]));
   const only = process.env.EVAL_ONLY?.split(",");
