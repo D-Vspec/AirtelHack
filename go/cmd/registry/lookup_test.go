@@ -4,6 +4,8 @@ import (
 	"encoding/csv"
 	"os"
 	"testing"
+
+	"udyam/pkg/registry"
 )
 
 func loadCSV(t *testing.T, path string) [][]string {
@@ -20,12 +22,12 @@ func loadCSV(t *testing.T, path string) [][]string {
 	return rows[1:]
 }
 
-func gstinIndex(t *testing.T) *Index[GSTIN] {
-	m := map[string]GSTIN{}
+func gstinIndex(t *testing.T) *registry.Index[registry.GSTIN] {
+	m := map[string]registry.GSTIN{}
 	for _, r := range loadCSV(t, "../../../data/mock_gstin_registry.csv") {
-		m[r[0]] = GSTIN{GSTIN: r[0], LegalName: r[1], TradeName: r[2], Status: r[7]}
+		m[r[0]] = registry.GSTIN{GSTIN: r[0], LegalName: r[1], TradeName: r[2], Status: r[7]}
 	}
-	return NewIndex(m)
+	return registry.NewIndex(m)
 }
 
 func TestEveryRegistryGSTINPassesChecksum(t *testing.T) {
@@ -34,7 +36,7 @@ func TestEveryRegistryGSTINPassesChecksum(t *testing.T) {
 		t.Fatalf("expected 3534 rows, got %d", len(rows))
 	}
 	for _, r := range rows {
-		if !GSTINChecksumValid(r[0]) {
+		if !registry.GSTINChecksumValid(r[0]) {
 			t.Errorf("checksum fails for registry GSTIN %s", r[0])
 		}
 	}
@@ -42,7 +44,7 @@ func TestEveryRegistryGSTINPassesChecksum(t *testing.T) {
 
 func TestChecksumRejectsBadInput(t *testing.T) {
 	for _, g := range []string{"", "37IHKXV5167L1Z", "37IHKXV5167L1ZT", "37ihkxv5167l1zs", "08YKZXS8189L1ZO"} {
-		if GSTINChecksumValid(g) {
+		if registry.GSTINChecksumValid(g) {
 			t.Errorf("%q should fail checksum", g)
 		}
 	}
@@ -80,7 +82,7 @@ func TestKYCCertificateGSTINsResolveAsDocumented(t *testing.T) {
 		if m.Record != nil && m.Record.Status != c.status {
 			t.Errorf("%s: status %s, want %s", c.applicant, m.Record.Status, c.status)
 		}
-		if got := GSTINChecksumValid(m.Query); got != c.checksumOK {
+		if got := registry.GSTINChecksumValid(m.Query); got != c.checksumOK {
 			t.Errorf("%s: checksumValid %v, want %v", c.applicant, got, c.checksumOK)
 		}
 	}
@@ -92,11 +94,11 @@ func TestKYCCertificateGSTINsResolveAsDocumented(t *testing.T) {
 }
 
 func TestUdyamResolve(t *testing.T) {
-	m := map[string]Udyam{}
+	m := map[string]registry.Udyam{}
 	for _, r := range loadCSV(t, "../../../data/mock_udyam_registry.csv") {
-		m[r[0]] = Udyam{UdyamNumber: r[0], EnterpriseName: r[1]}
+		m[r[0]] = registry.Udyam{UdyamNumber: r[0], EnterpriseName: r[1]}
 	}
-	ix := NewIndex(m)
+	ix := registry.NewIndex(m)
 	if got := ix.Resolve("udyam-kl-00-3078801"); got.MatchType != "exact" || got.Record.EnterpriseName != "Balaji Dental Care LLP" {
 		t.Errorf("exact (case-insensitive) failed: %+v", got)
 	}

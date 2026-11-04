@@ -1,4 +1,6 @@
-package main
+// Package registry holds the GSTIN checksum, OCR-confusion correction and the in-memory registry index
+// shared by the registry service and the KYC pipeline.
+package registry
 
 import "strings"
 
@@ -23,7 +25,7 @@ func GSTINChecksumValid(g string) bool {
 }
 
 // confusable maps characters OCR mixes up onto one representative: O/0, I/1/J/T, S/5, B/8.
-func confusable(s string) string {
+func Confusable(s string) string {
 	return strings.Map(func(r rune) rune {
 		switch r {
 		case 'O':
@@ -39,7 +41,7 @@ func confusable(s string) string {
 	}, s)
 }
 
-func clean(id string) string {
+func Clean(id string) string {
 	return strings.ToUpper(strings.Join(strings.Fields(id), ""))
 }
 
@@ -53,7 +55,7 @@ type Index[T any] struct {
 func NewIndex[T any](rows map[string]T) *Index[T] {
 	ix := &Index[T]{rows: rows, byConf: map[string][]string{}}
 	for id := range rows {
-		k := confusable(id)
+		k := Confusable(id)
 		ix.byConf[k] = append(ix.byConf[k], id)
 	}
 	return ix
@@ -68,13 +70,13 @@ type Match[T any] struct {
 }
 
 func (ix *Index[T]) Resolve(query string) Match[T] {
-	q := clean(query)
+	q := Clean(query)
 	m := Match[T]{Query: q, MatchType: "none"}
 	if r, ok := ix.rows[q]; ok {
 		m.MatchType, m.ID, m.Record = "exact", q, &r
 		return m
 	}
-	if c := ix.byConf[confusable(q)]; len(c) == 1 {
+	if c := ix.byConf[Confusable(q)]; len(c) == 1 {
 		r := ix.rows[c[0]]
 		m.MatchType, m.ID, m.Record = "corrected", c[0], &r
 		return m
@@ -83,7 +85,7 @@ func (ix *Index[T]) Resolve(query string) Match[T] {
 		return m
 	}
 	// ponytail: linear scan over ~3.5k ids per miss; index by deletion keys if registries grow.
-	cq := confusable(q)
+	cq := Confusable(q)
 	for k, ids := range ix.byConf {
 		if len(k) == len(cq) && hamming(k, cq) == 1 {
 			m.Suggestions = append(m.Suggestions, ids...)

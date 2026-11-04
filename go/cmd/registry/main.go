@@ -13,36 +13,15 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"udyam/pkg/logx"
+	"udyam/pkg/registry"
 	"udyam/pkg/svc"
 )
-
-type GSTIN struct {
-	GSTIN            string `json:"gstin" db:"gstin"`
-	LegalName        string `json:"legalName" db:"legal_name"`
-	TradeName        string `json:"tradeName" db:"trade_name"`
-	Constitution     string `json:"constitution" db:"constitution"`
-	Address          string `json:"address" db:"principal_place_of_business"`
-	State            string `json:"state" db:"state"`
-	RegistrationDate string `json:"registrationDate" db:"registration_date"`
-	Status           string `json:"status" db:"status"`
-}
-
-type Udyam struct {
-	UdyamNumber        string `json:"udyamNumber" db:"udyam_number"`
-	EnterpriseName     string `json:"enterpriseName" db:"enterprise_name"`
-	EnterpriseType     string `json:"enterpriseType" db:"enterprise_type"`
-	MajorActivity      string `json:"majorActivity" db:"major_activity"`
-	NICDescription     string `json:"nicDescription" db:"nic_description"`
-	State              string `json:"state" db:"state"`
-	City               string `json:"city" db:"city"`
-	DateOfRegistration string `json:"dateOfRegistration" db:"date_of_registration"`
-}
 
 // registries is loaded lazily so the service starts before `make seed` has run.
 type registries struct {
 	mu    sync.Mutex
-	gstin *Index[GSTIN]
-	udyam *Index[Udyam]
+	gstin *registry.Index[registry.GSTIN]
+	udyam *registry.Index[registry.Udyam]
 }
 
 func load[T any](ctx context.Context, db *pgxpool.Pool, sql string, key func(T) string) (map[string]T, error) {
@@ -61,21 +40,21 @@ func load[T any](ctx context.Context, db *pgxpool.Pool, sql string, key func(T) 
 	return m, nil
 }
 
-func (r *registries) get(ctx context.Context, db *pgxpool.Pool) (*Index[GSTIN], *Index[Udyam], error) {
+func (r *registries) get(ctx context.Context, db *pgxpool.Pool) (*registry.Index[registry.GSTIN], *registry.Index[registry.Udyam], error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if r.gstin == nil {
 		g, err := load(ctx, db, `SELECT gstin, legal_name, trade_name, constitution, principal_place_of_business, state,
-			registration_date::text AS registration_date, status FROM gstin`, func(x GSTIN) string { return x.GSTIN })
+			registration_date::text AS registration_date, status FROM gstin`, func(x registry.GSTIN) string { return x.GSTIN })
 		if err != nil {
 			return nil, nil, err
 		}
 		u, err := load(ctx, db, `SELECT udyam_number, enterprise_name, enterprise_type, major_activity, nic_description, state, city,
-			date_of_registration::text AS date_of_registration FROM udyam`, func(x Udyam) string { return x.UdyamNumber })
+			date_of_registration::text AS date_of_registration FROM udyam`, func(x registry.Udyam) string { return x.UdyamNumber })
 		if err != nil {
 			return nil, nil, err
 		}
-		r.gstin, r.udyam = NewIndex(g), NewIndex(u)
+		r.gstin, r.udyam = registry.NewIndex(g), registry.NewIndex(u)
 	}
 	return r.gstin, r.udyam, nil
 }
@@ -85,7 +64,7 @@ func main() {
 	svc.Run(svc.Options{
 		Name: "registry", DefaultPort: "8081", Schema: "registry",
 		Setup: func(ctx context.Context, a *svc.App) error {
-			indexes := func(w http.ResponseWriter, r *http.Request) (*Index[GSTIN], *Index[Udyam], bool) {
+			indexes := func(w http.ResponseWriter, r *http.Request) (*registry.Index[registry.GSTIN], *registry.Index[registry.Udyam], bool) {
 				c, cancel := context.WithTimeout(r.Context(), 10*time.Second)
 				defer cancel()
 				g, u, err := reg.get(c, a.DB)
@@ -105,10 +84,7 @@ func main() {
 				m := g.Resolve(r.PathValue("id"))
 				sort.Strings(m.Suggestions)
 				a.Log.Info("gstin lookup", "gstin", logx.MaskID(m.Query), "matchType", m.MatchType)
-				svc.JSON(w, status(m.MatchType), struct {
-					Match[GSTIN]
-					ChecksumValid bool `json:"checksumValid"`
-				}{m, GSTINChecksumValid(m.Query)})
+				svc.JSON(w, httpStatus(m.MatchType), registry.GSTINMatch{Match: m, ChecksumValid: registry.GSTINChecksumValid(m.Query)})
 			})
 
 			a.Mux.HandleFunc("GET /udyam/{id}", func(w http.ResponseWriter, r *http.Request) {
@@ -119,14 +95,14 @@ func main() {
 				m := u.Resolve(r.PathValue("id"))
 				sort.Strings(m.Suggestions)
 				a.Log.Info("udyam lookup", "udyam", logx.MaskID(m.Query), "matchType", m.MatchType)
-				svc.JSON(w, status(m.MatchType), m)
+				svc.JSON(w, httpStatus(m.MatchType), m)
 			})
 			return nil
 		},
 	})
 }
 
-func status(matchType string) int {
+func httpStatus(matchType string) int {
 	if matchType == "none" {
 		return http.StatusNotFound
 	}
