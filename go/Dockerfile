@@ -6,7 +6,9 @@ ARG SERVICE
 RUN go mod tidy && CGO_ENABLED=0 go build -trimpath -o /out/service ./cmd/${SERVICE}
 
 FROM alpine:3.20
-# Phase 4 adds tesseract-ocr for the kyc service.
-RUN apk add --no-cache ca-certificates
+ARG SERVICE
+# The kyc service shells out to tesseract for OCR (go/pkg/kyc/ocr.go).
+RUN apk add --no-cache ca-certificates && \
+    if [ "$SERVICE" = "kyc" ]; then apk add --no-cache tesseract-ocr tesseract-ocr-data-eng; fi
 COPY --from=build /out/service /service
 ENTRYPOINT ["/service"]

@@ -1,0 +1,3 @@
+# Go + tesseract, for running the KYC specimen tests against real OCR: make kyc-test
+FROM golang:1.22-alpine
+RUN apk add --no-cache tesseract-ocr tesseract-ocr-data-eng
