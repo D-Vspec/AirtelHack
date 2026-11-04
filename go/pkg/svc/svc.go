@@ -48,6 +48,18 @@ func JSON(w http.ResponseWriter, status int, v any) {
 	_ = json.NewEncoder(w).Encode(v)
 }
 
+// DecodeJSON strictly decodes a request body (max 1 MB, unknown fields rejected) and answers
+// 400 on failure. Returns false when the handler should stop.
+func DecodeJSON(w http.ResponseWriter, r *http.Request, v any) bool {
+	dec := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<20))
+	dec.DisallowUnknownFields()
+	if err := dec.Decode(v); err != nil {
+		JSON(w, 400, map[string]string{"code": "INVALID_REQUEST", "message": err.Error()})
+		return false
+	}
+	return true
+}
+
 // Run starts the service and blocks until SIGINT/SIGTERM.
 func Run(o Options) {
 	log := logx.New(o.Name)
