@@ -132,6 +132,7 @@ func main() {
 					content_type text NOT NULL,
 					uploaded_at  timestamptz NOT NULL DEFAULT now(),
 					PRIMARY KEY (lead_id, doc_type));
+				ALTER TABLE documents ADD COLUMN IF NOT EXISTS read jsonb;
 				CREATE TABLE IF NOT EXISTS checks (
 					id         text PRIMARY KEY,
 					lead_id    text NOT NULL,
@@ -312,12 +313,13 @@ func main() {
 					fail(w, 502, "OCR_FAILED", "could not run OCR")
 					return
 				}
-				if _, err := a.DB.Exec(r.Context(), `INSERT INTO documents (lead_id, doc_type, content, content_type, uploaded_at) VALUES ($1, $2, $3, $4, now())
-					ON CONFLICT (lead_id, doc_type) DO UPDATE SET content = $3, content_type = $4, uploaded_at = now()`, lead, docType, body, "image/"+format); err != nil {
+				minimise(map[string]kyc.Fields{docType: doc.Fields})
+				// The read (fields + findings) is stored so the check does not OCR again.
+				if _, err := a.DB.Exec(r.Context(), `INSERT INTO documents (lead_id, doc_type, content, content_type, read, uploaded_at) VALUES ($1, $2, $3, $4, $5, now())
+					ON CONFLICT (lead_id, doc_type) DO UPDATE SET content = $3, content_type = $4, read = $5, uploaded_at = now()`, lead, docType, body, "image/"+format, doc); err != nil {
 					fail(w, 500, "INVALID_REQUEST", err.Error())
 					return
 				}
-				minimise(map[string]kyc.Fields{docType: doc.Fields})
 				a.Log.Info("document uploaded", "leadId", lead, "doc", docType, "findings", codes(doc.Findings))
 				svc.JSON(w, 200, doc)
 			})
@@ -333,25 +335,23 @@ func main() {
 					fail(w, 403, "CONSENT_REQUIRED", "record kyc_verification consent first")
 					return
 				}
-				rows, err := a.DB.Query(r.Context(), `SELECT doc_type, content FROM documents WHERE lead_id = $1`, lead)
+				rows, err := a.DB.Query(r.Context(), `SELECT doc_type, read FROM documents WHERE lead_id = $1 AND read IS NOT NULL`, lead)
 				if err != nil {
 					fail(w, 500, "INVALID_REQUEST", err.Error())
 					return
 				}
-				docs := map[string]image.Image{}
+				docs := map[string]kyc.Document{}
 				var submitted []string
 				for rows.Next() {
 					var t string
-					var b []byte
-					if err := rows.Scan(&t, &b); err != nil {
+					var d kyc.Document
+					if err := rows.Scan(&t, &d); err != nil {
 						rows.Close()
 						fail(w, 500, "INVALID_REQUEST", err.Error())
 						return
 					}
-					if img, _, err := image.Decode(bytes.NewReader(b)); err == nil {
-						docs[t] = img
-						submitted = append(submitted, t)
-					}
+					docs[t] = d
+					submitted = append(submitted, t)
 				}
 				rows.Close()
 				if len(docs) == 0 {
@@ -361,7 +361,7 @@ func main() {
 				res := checkResult{ID: events.NewID(), LeadID: lead, CheckedAt: time.Now().UTC()}
 				publish(r.Context(), events.TopicKycSubmitted, lead, corr, map[string]any{"leadId": lead, "checkId": res.ID, "documents": submitted})
 
-				out, err := checker.Check(r.Context(), docs)
+				out, err := checker.Evaluate(r.Context(), docs)
 				if err != nil {
 					a.Log.Error("check failed", "leadId", lead, "err", err)
 					fail(w, 503, "REGISTRY_UNAVAILABLE", "registry or OCR unavailable; try again")

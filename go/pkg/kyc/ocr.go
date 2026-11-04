@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"image"
 	"image/png"
+	"os"
 	"os/exec"
 	"regexp"
 	"strings"
@@ -23,6 +24,9 @@ func Tesseract(ctx context.Context, img *image.Gray) (string, error) {
 	}
 	cmd := exec.CommandContext(ctx, "tesseract", "stdin", "stdout", "--psm", "6")
 	cmd.Stdin, cmd.Stdout, cmd.Stderr = &in, &out, &errb
+	// One thread per process: concurrent uploads each run tesseract, and OpenMP threads per process
+	// oversubscribe the CPU (timeouts in the container with 12 parallel applicants).
+	cmd.Env = append(os.Environ(), "OMP_THREAD_LIMIT=1")
 	if err := cmd.Run(); err != nil {
 		return "", fmt.Errorf("tesseract: %w: %s", err, strings.TrimSpace(errb.String()))
 	}

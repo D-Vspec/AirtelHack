@@ -62,6 +62,7 @@ func TestKYCCertificateGSTINsResolveAsDocumented(t *testing.T) {
 		{"K03", "27XUIXGO767D1ZP", "corrected", "27XUIXG0767D1ZP", "Active", false},
 		{"K04", "27PZSXS1936O1ZH", "exact", "27PZSXS1936O1ZH", "Active", true},
 		{"K05", "32TZAXB5481U1Z1", "exact", "32TZAXB5481U1Z1", "Active", true},
+		{"K05-tesseract5.3", "32TZAXB5481U171", "corrected", "32TZAXB5481U1Z1", "Active", false}, // Z read as 7
 		{"K06", "O8YKZXS8189L1Z0", "none", "", "", false},
 		{"K06-typed", "08YKZXS8189L1ZO", "none", "", "", false},
 		{"K07", "07CPCXNO398P1ZT", "corrected", "07CPCXN0398P1ZT", "Active", false},

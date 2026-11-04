@@ -129,27 +129,37 @@ func (c Checker) ReadDocument(ctx context.Context, docType string, img image.Ima
 	return doc, nil
 }
 
-// Check runs every stage on one applicant's documents (keyed by document type).
-// Errors are infrastructure failures (OCR binary, registry down), not findings.
+// Check reads every document (image_quality, ocr) and then evaluates the applicant.
 func (c Checker) Check(ctx context.Context, docs map[string]image.Image) (Result, error) {
+	read := map[string]Document{}
+	for d, img := range docs {
+		doc, err := c.ReadDocument(ctx, d, img)
+		if err != nil {
+			return Result{}, err
+		}
+		read[d] = doc
+	}
+	return c.Evaluate(ctx, read)
+}
+
+// Evaluate runs the applicant-level stages on documents already read (the service stores each
+// upload's Document, so a check does not OCR again). Errors are infrastructure failures (registry
+// down), not findings.
+func (c Checker) Evaluate(ctx context.Context, read map[string]Document) (Result, error) {
 	res := Result{Fields: map[string]Fields{}, Skew: map[string]float64{}}
 	add := func(f Finding) { res.Findings = append(res.Findings, f) }
 
 	// completeness
 	for _, d := range RequiredDocs {
-		if docs[d] == nil {
+		if _, ok := read[d]; !ok {
 			add(finding(events.FindingDocMissing, "completeness", d, d+" not submitted"))
 		}
 	}
-
-	// image_quality and ocr, per document
+	// image_quality and ocr findings from each read, in document order
 	for _, d := range RequiredDocs {
-		if docs[d] == nil {
+		doc, ok := read[d]
+		if !ok {
 			continue
-		}
-		doc, err := c.ReadDocument(ctx, d, docs[d])
-		if err != nil {
-			return res, err
 		}
 		res.Findings = append(res.Findings, doc.Findings...)
 		if doc.Fields != nil {

@@ -81,7 +81,8 @@ func GSTINChecksumValid(g string) bool {
 	return gstinAlphabet[(36-sum%36)%36] == g[14]
 }
 
-// confusable maps characters OCR mixes up onto one representative: O/0, I/1/J/T, S/5, B/8.
+// confusable maps characters OCR mixes up onto one representative: O/0, I/1/J/T, S/5, B/8, Z/7
+// (tesseract 5.3 reads K05's Z as 7).
 func confusable(s string) string {
 	return strings.Map(func(r rune) rune {
 		switch r {
@@ -93,6 +94,8 @@ func confusable(s string) string {
 			return '5'
 		case 'B':
 			return '8'
+		case 'Z':
+			return '7'
 		}
 		return r
 	}, s)
