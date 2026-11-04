@@ -3,7 +3,11 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { createApiClient, newLeadId, t as translate, type BusinessProfile, type LangCode, type StringKey } from "@udyam/shared";
 
-export const api = createApiClient(process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080/api");
+export const ADMIN_TOKEN_KEY = "udyam.adminToken";
+// The back office sends its token (gateway ADMIN_TOKEN) from localStorage; owner routes need none.
+export const api = createApiClient(process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080/api", {
+  adminToken: () => (typeof window === "undefined" ? null : localStorage.getItem(ADMIN_TOKEN_KEY)),
+});
 
 export interface ChatMessage {
   role: "owner" | "advisor";

@@ -128,6 +128,7 @@ func main() {
 			a.Mux.HandleFunc("POST /orders/{id}/transitions", s.transition)
 			a.Mux.HandleFunc("POST /orders/{id}/fallback/accept", s.acceptFallback)
 			go outbox.Relay(ctx, a.DB, a.Producer, a.Log)
+			a.Gauge("outbox_pending", outbox.PendingGauge(a.DB))
 			go kafkax.Run(ctx, a.Log, a.Brokers, "tracker",
 				[]string{events.TopicQuoteAccepted, events.TopicKycPassed, events.TopicKycFailed}, s.handle)
 			return nil

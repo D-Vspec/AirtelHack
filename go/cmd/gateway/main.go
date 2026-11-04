@@ -21,7 +21,8 @@ func cors(next http.Handler) http.Handler {
 	origins := config.String("CORS_ORIGINS", "*")
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", origins)
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Request-Id")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Request-Id, X-Correlation-Id, X-Admin-Token")
+		w.Header().Set("Access-Control-Expose-Headers", "X-Request-Id, X-Correlation-Id, Retry-After")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PATCH, PUT, DELETE, OPTIONS")
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusNoContent)
@@ -43,8 +44,12 @@ func main() {
 		"advisor":  config.String("ADVISOR_URL", "http://advisor:8090"),
 	}
 
+	lim := newLimiter(float64(config.Int("RATE_LIMIT_RPS", 30)))
+	adminToken := config.String("ADMIN_TOKEN", "")
 	svc.Run(svc.Options{
-		Name: "gateway", DefaultPort: "8080", UsesKafka: true, Wrap: cors,
+		Name: "gateway", DefaultPort: "8080", UsesKafka: true,
+		// outermost first: CORS answers preflights, then rate limit, then the back-office check
+		Wrap: func(h http.Handler) http.Handler { return cors(lim.middleware(requireAdmin(adminToken, h))) },
 		Setup: func(ctx context.Context, a *svc.App) error {
 			for name, raw := range upstreams {
 				u, err := url.Parse(raw)
@@ -52,7 +57,16 @@ func main() {
 					return err
 				}
 				prefix := "/api/" + name
-				a.Mux.Handle(prefix+"/", http.StripPrefix(prefix, httputil.NewSingleHostReverseProxy(u)))
+				proxy := httputil.NewSingleHostReverseProxy(u)
+				proxy.Transport = &http.Transport{ResponseHeaderTimeout: 120 * time.Second, IdleConnTimeout: 90 * time.Second, MaxIdleConnsPerHost: 32}
+				// a service that is down or restarting answers a clear 503 instead of an empty 502
+				proxy.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
+					a.Log.Warn("upstream unavailable", "service", name, "path", r.URL.Path, "err", err, "requestId", r.Header.Get("X-Request-Id"))
+					w.Header().Set("Retry-After", "5")
+					svc.JSON(w, http.StatusServiceUnavailable, map[string]string{"code": "UPSTREAM_UNAVAILABLE", "service": name,
+						"message": name + " is temporarily unavailable; please retry in a few seconds"})
+				}
+				a.Mux.Handle(prefix+"/", http.StripPrefix(prefix, proxy))
 			}
 
 			// Aggregated health of every upstream.

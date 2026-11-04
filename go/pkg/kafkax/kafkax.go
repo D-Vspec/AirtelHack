@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/segmentio/kafka-go"
@@ -47,6 +48,13 @@ func (p *Producer) Close() error { return p.w.Close() }
 
 // Handler processes one event. Return an error to signal failure.
 type Handler func(ctx context.Context, topic string, env events.Envelope) error
+
+var processed, retried, deadLettered atomic.Uint64
+
+// Counters reports events handled, retries and dead letters since start (for /metrics).
+func Counters() (uint64, uint64, uint64) {
+	return processed.Load(), retried.Load(), deadLettered.Load()
+}
 
 // Retry backoffs before an event is dead-lettered (so 4 attempts in all).
 var Backoffs = []time.Duration{200 * time.Millisecond, time.Second, 3 * time.Second}
@@ -97,6 +105,7 @@ func Consume(ctx context.Context, log *slog.Logger, brokers, group string, topic
 				if herr = h(ctx, m.Topic, env); herr == nil || ctx.Err() != nil || attempts > len(Backoffs) {
 					break
 				}
+				retried.Add(1)
 				log.Warn("handler failed, retrying", "topic", m.Topic, "eventId", env.ID, "attempt", attempts, "err", herr)
 				select {
 				case <-ctx.Done():
@@ -116,8 +125,10 @@ func Consume(ctx context.Context, log *slog.Logger, brokers, group string, topic
 			if err != nil {
 				return fmt.Errorf("dead-letter failed, will redeliver: %w", err)
 			}
+			deadLettered.Add(1)
 			log.Error("event dead-lettered", "topic", m.Topic, "eventId", env.ID, "attempts", attempts, "err", herr)
 		}
+		processed.Add(1)
 		if err := r.CommitMessages(ctx, m); err != nil {
 			log.Error("commit failed", "err", err)
 		}

@@ -112,7 +112,8 @@ try {
         await shot(p, "desktop-07-activated-5g");
       },
     });
-    for (const [path, name] of [["/admin/leads", "admin-leads"], ["/admin/handoff", "admin-handoff"], ["/admin", "admin-orders"], ["/admin/reviews", "admin-reviews"], ["/admin/messages", "admin-messages"]]) {
+    await page.evaluate(() => localStorage.setItem("udyam.adminToken", "demo-admin-token"));
+    for (const [path, name] of [["/admin/leads", "admin-leads"], ["/admin/handoff", "admin-handoff"], ["/admin", "admin-orders"], ["/admin/reviews", "admin-reviews"], ["/admin/messages", "admin-messages"], ["/admin/status", "admin-status"]]) {
       await page.goto(WEB + path);
       await page.waitForTimeout(1500);
       await shot(page, `desktop-${name}`);

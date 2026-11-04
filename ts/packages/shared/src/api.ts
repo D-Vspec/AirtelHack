@@ -46,13 +46,17 @@ export interface QuoteToggle {
 }
 
 /** Typed client for the gateway (contracts/*.schema.json). Every path is relative to NEXT_PUBLIC_API_URL / EXPO_PUBLIC_API_URL. */
-export function createApiClient(baseUrl: string) {
+export function createApiClient(baseUrl: string, opts: { adminToken?: () => string | null | undefined } = {}) {
   const root = baseUrl.replace(/\/$/, "");
+  const adminHeader = (): Record<string, string> => {
+    const token = opts.adminToken?.();
+    return token ? { "X-Admin-Token": token } : {};
+  };
   async function request<T>(path: string, init?: RequestInit): Promise<T> {
     const isJson = !(init?.body instanceof Blob) && !(init?.body instanceof ArrayBuffer);
     const res = await fetch(`${root}${path}`, {
       ...init,
-      headers: { ...(isJson ? { "Content-Type": "application/json" } : {}), ...(init?.headers ?? {}) },
+      headers: { ...(isJson ? { "Content-Type": "application/json" } : {}), ...adminHeader(), ...(init?.headers ?? {}) },
     });
     const text = await res.text();
     let body: unknown = null;
@@ -125,6 +129,12 @@ export function createApiClient(baseUrl: string) {
       timeline: (orderId: string) => request<Timeline>(`/tracker/orders/${encodeURIComponent(orderId)}/timeline`),
       transition: (orderId: string, body: Transition) => request<Order>(`/tracker/orders/${encodeURIComponent(orderId)}/transitions`, json("POST", body)),
       acceptFallback: (orderId: string) => request<Order>(`/tracker/orders/${encodeURIComponent(orderId)}/fallback/accept`, json("POST")),
+    },
+    /** Prometheus text from a service's /metrics (back office only). */
+    metrics: async (service: string) => {
+      const r = await fetch(`${root}/${service}/metrics`, { headers: adminHeader() });
+      if (!r.ok) throw new ApiError(r.status, null);
+      return r.text();
     },
     notify: {
       messages: (leadId?: string) => request<{ messages: SentMessage[] }>(`/notify/messages${q({ leadId })}`),

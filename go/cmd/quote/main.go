@@ -130,6 +130,7 @@ func main() {
 				return err
 			}
 			go outbox.Relay(ctx, a.DB, a.Producer, a.Log)
+			a.Gauge("outbox_pending", outbox.PendingGauge(a.DB))
 			// write + event in one transaction (pkg/outbox); the relay publishes to Kafka
 			enqueue := func(r *http.Request, tx pgx.Tx, topic string, q catalogue.Quote) error {
 				_, err := outbox.Enqueue(r.Context(), tx, topic, q.LeadID, r.Header.Get("X-Request-Id"), q)

@@ -14,6 +14,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -35,11 +36,26 @@ func call(t *testing.T, method, path string, body any, want int) map[string]any 
 		b, _ := json.Marshal(body)
 		r = bytes.NewReader(b)
 	}
-	req, _ := http.NewRequest(method, api+path, r)
-	req.Header.Set("Content-Type", "application/json")
-	resp, err := (&http.Client{Timeout: 120 * time.Second}).Do(req)
-	if err != nil {
-		t.Fatalf("%s %s: %v", method, path, err)
+	var buf []byte
+	if r != nil {
+		buf, _ = io.ReadAll(r)
+	}
+	var resp *http.Response
+	for attempt := 0; ; attempt++ {
+		req, _ := http.NewRequest(method, api+path, bytes.NewReader(buf))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("X-Admin-Token", envOr("ADMIN_TOKEN", "demo-admin-token"))
+		var err error
+		resp, err = (&http.Client{Timeout: 120 * time.Second}).Do(req)
+		if err != nil {
+			t.Fatalf("%s %s: %v", method, path, err)
+		}
+		if resp.StatusCode != http.StatusTooManyRequests || attempt == 5 {
+			break
+		}
+		resp.Body.Close() // rate limited: back off as the gateway asks
+		wait, _ := strconv.Atoi(resp.Header.Get("Retry-After"))
+		time.Sleep(time.Duration(max(wait, 1)) * time.Second)
 	}
 	defer resp.Body.Close()
 	raw, _ := io.ReadAll(resp.Body)

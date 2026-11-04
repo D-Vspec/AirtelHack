@@ -103,6 +103,14 @@ func main() {
 			}
 			s.routes()
 			go outbox.Relay(ctx, a.DB, a.Producer, a.Log)
+			a.Gauge("outbox_pending", outbox.PendingGauge(a.DB))
+			a.Gauge("kyc_reviews_open", func() float64 {
+				var n int
+				if err := a.DB.QueryRow(context.Background(), `SELECT count(*) FROM reviews WHERE status = 'open'`).Scan(&n); err != nil {
+					return -1
+				}
+				return float64(n)
+			})
 			go s.retention(ctx, time.Duration(config.Int("KYC_DOC_RETENTION_DAYS", 30))*24*time.Hour)
 			go s.abandonSweep(ctx, time.Duration(config.Int("KYC_ABANDON_AFTER_MINUTES", 1440))*time.Minute)
 			return nil

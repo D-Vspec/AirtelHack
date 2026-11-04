@@ -1,5 +1,5 @@
 # One Dockerfile for every Go service: docker build --build-arg SERVICE=gateway .
-FROM golang:1.22-alpine AS build
+FROM golang:1.26-alpine AS build
 WORKDIR /src
 # Modules first, in their own layer: every service image reuses it, so `make up` downloads
 # dependencies once instead of once per service.

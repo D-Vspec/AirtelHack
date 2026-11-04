@@ -168,3 +168,16 @@ func sleep(ctx context.Context, d time.Duration) {
 	case <-time.After(d):
 	}
 }
+
+// PendingGauge returns a /metrics gauge for the unpublished outbox rows.
+func PendingGauge(db *pgxpool.Pool) func() float64 {
+	return func() float64 {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+		n, err := Pending(ctx, db)
+		if err != nil {
+			return -1
+		}
+		return float64(n)
+	}
+}

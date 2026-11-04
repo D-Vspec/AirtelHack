@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AdminGate } from "@/components/admin-gate";
 
 const TABS = [
   { href: "/admin/leads", label: "Leads by score" },
@@ -6,6 +7,7 @@ const TABS = [
   { href: "/admin", label: "Orders" },
   { href: "/admin/reviews", label: "KYC review queue" },
   { href: "/admin/messages", label: "Messages" },
+  { href: "/admin/status", label: "Status" },
 ];
 
 export default function AdminLayout({ children }: LayoutProps<"/admin">) {
@@ -22,7 +24,7 @@ export default function AdminLayout({ children }: LayoutProps<"/admin">) {
           ))}
         </nav>
       </header>
-      <main className="mx-auto max-w-6xl px-4 py-6">{children}</main>
+      <main className="mx-auto max-w-6xl px-4 py-6"><AdminGate>{children}</AdminGate></main>
     </div>
   );
 }

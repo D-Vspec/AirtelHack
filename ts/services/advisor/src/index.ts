@@ -15,6 +15,30 @@ const sessions = new Map<string, SessionState>();
 let llm: ReturnType<typeof advisorLlm> | undefined;
 
 app.get("/healthz", async () => ({ status: "ok", service: "advisor" }));
+
+// Prometheus text, same metric names as the Go services (go/pkg/svc/metrics.go).
+const started = Date.now();
+const reqs = new Map<string, number>();
+const lat = new Map<string, [number, number]>();
+app.addHook("onResponse", async (req, reply) => {
+  const route = req.routeOptions.url ?? "unknown";
+  if (route === "/metrics" || route === "/healthz") return;
+  const k = `${req.method}|${route}|${Math.floor(reply.statusCode / 100)}xx`;
+  reqs.set(k, (reqs.get(k) ?? 0) + 1);
+  const lk = `${req.method}|${route}`;
+  const [s, c] = lat.get(lk) ?? [0, 0];
+  lat.set(lk, [s + reply.elapsedTime / 1000, c + 1]);
+});
+app.get("/metrics", async (_req, reply) => {
+  const lines = ["# TYPE udyam_http_requests_total counter"];
+  for (const [k, v] of reqs) { const [m, r, st] = k.split("|"); lines.push(`udyam_http_requests_total{service="advisor",method="${m}",route="${r}",status="${st}"} ${v}`); }
+  lines.push("# TYPE udyam_http_request_seconds summary");
+  for (const [k, [s, c]] of lat) { const [m, r] = k.split("|"); lines.push(`udyam_http_request_seconds_sum{service="advisor",method="${m}",route="${r}"} ${s.toFixed(6)}`, `udyam_http_request_seconds_count{service="advisor",method="${m}",route="${r}"} ${c}`); }
+  lines.push("# TYPE udyam_advisor_sessions gauge", `udyam_advisor_sessions{service="advisor"} ${sessions.size}`);
+  lines.push("# TYPE udyam_uptime_seconds gauge", `udyam_uptime_seconds{service="advisor"} ${Math.round((Date.now() - started) / 1000)}`);
+  reply.type("text/plain; version=0.0.4");
+  return lines.join("\n") + "\n";
+});
 app.get("/ping", async () => ({ service: "advisor", time: new Date().toISOString() }));
 
 app.post<{ Body: { sessionId?: string; leadId?: string; message?: string } }>("/chat", {

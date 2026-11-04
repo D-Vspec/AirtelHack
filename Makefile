@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 SVC ?=
 PHASE ?=
-.PHONY: help setup deps contracts up down logs ps seed smoke test typecheck package packs data-dictionary clean kyc-test kyc-record integration web web-e2e mobile-e2e model
+.PHONY: help setup deps contracts up down logs ps seed smoke test typecheck package packs data-dictionary clean kyc-test kyc-record integration web web-e2e mobile-e2e model scenarios drills
 
 help: ## list targets
 	@grep -E '^[a-z-]+:.*##' Makefile | sed 's/:.*##/\t/' | column -t -s $$'\t'
@@ -51,6 +51,12 @@ kyc-test: ## KYC 12-applicant table against real tesseract (Docker); plain `make
 kyc-record: ## re-record tesseract output for the KYC replay tests (after changing image preprocessing)
 	rm -f go/pkg/kyc/testdata/ocr/*.txt
 	$(KYC_TEST_RUN) -e KYC_RECORD=1 udyam-kyc-test go test ./pkg/kyc -count=1 -run Specimen
+
+scenarios: ## replay 33 user-story scenarios (docs/scenarios.md) against the live stack; advisor ones need an LLM key
+	cd go && go run ./cmd/scenarios
+
+drills: ## failure drills: Kafka down, kyc down, Postgres restart (docs/failure-drills.md); needs Docker
+	cd go && go test -tags integration ./integration -run Drill -count=1 -v -timeout 15m
 
 integration: ## lead -> quote -> KYC -> activation on the live stack, with services and Kafka stopped mid-flow (needs make up seed)
 	cd go && go test -tags integration ./integration -count=1 -v -timeout 15m

@@ -10,6 +10,7 @@ x-go-service: &go-service
   depends_on:
     postgres:   { condition: service_healthy }
     kafka-init: { condition: service_completed_successfully }
+    db-roles:   { condition: service_completed_successfully }
 
 services:
   postgres:
@@ -60,6 +61,18 @@ services:
     volumes: ["./infra/kafka:/init:ro"]
     restart: "no"
 
+  # Per-service Postgres roles (infra/postgres/roles.sql); idempotent, runs on every `up`.
+  db-roles:
+    image: postgres:16-alpine
+    depends_on:
+      postgres: { condition: service_healthy }
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD:-udyam}
+      PGOPTIONS: "-c udyam.pw=${SERVICE_DB_PASSWORD:-udyam-svc}"
+    command: ["psql", "-h", "postgres", "-U", "${POSTGRES_USER:-udyam}", "-d", "${POSTGRES_DB:-udyam}", "-q", "-f", "/init/roles.sql"]
+    volumes: ["./infra/postgres:/init:ro"]
+    restart: "no"
+
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
     ports: ["8089:8080"]
@@ -77,32 +90,34 @@ services:
       <<: *go-env
       PORT: "8080"
       CORS_ORIGINS: "*"
+      ADMIN_TOKEN: ${ADMIN_TOKEN:-demo-admin-token}
+      RATE_LIMIT_RPS: ${RATE_LIMIT_RPS:-30}
 
   registry:
     <<: *go-service
     build: { context: ./go, args: { SERVICE: registry } }
-    environment: { <<: *go-env, PORT: "8081" }
+    environment: { <<: *go-env, PORT: "8081", DATABASE_URL: "postgres://svc_registry:${SERVICE_DB_PASSWORD:-udyam-svc}@postgres:5432/${POSTGRES_DB:-udyam}?sslmode=disable" }
   rules:
     <<: *go-service
     build: { context: ./go, args: { SERVICE: rules } }
-    environment: { <<: *go-env, PORT: "8082" }
+    environment: { <<: *go-env, PORT: "8082", DATABASE_URL: "postgres://svc_rules:${SERVICE_DB_PASSWORD:-udyam-svc}@postgres:5432/${POSTGRES_DB:-udyam}?sslmode=disable" }
   quote:
     <<: *go-service
     build: { context: ./go, args: { SERVICE: quote } }
-    environment: { <<: *go-env, PORT: "8083" }
+    environment: { <<: *go-env, PORT: "8083", DATABASE_URL: "postgres://svc_quote:${SERVICE_DB_PASSWORD:-udyam-svc}@postgres:5432/${POSTGRES_DB:-udyam}?sslmode=disable" }
   kyc:
     <<: *go-service
     build: { context: ./go, args: { SERVICE: kyc } }
-    environment: { <<: *go-env, PORT: "8084" }
+    environment: { <<: *go-env, PORT: "8084", DATABASE_URL: "postgres://svc_kyc:${SERVICE_DB_PASSWORD:-udyam-svc}@postgres:5432/${POSTGRES_DB:-udyam}?sslmode=disable" }
     volumes: ["./data/kyc_documents:/data/kyc_documents:ro"]
   tracker:
     <<: *go-service
     build: { context: ./go, args: { SERVICE: tracker } }
-    environment: { <<: *go-env, PORT: "8085" }
+    environment: { <<: *go-env, PORT: "8085", DATABASE_URL: "postgres://svc_tracker:${SERVICE_DB_PASSWORD:-udyam-svc}@postgres:5432/${POSTGRES_DB:-udyam}?sslmode=disable" }
   notify:
     <<: *go-service
     build: { context: ./go, args: { SERVICE: notify } }
-    environment: { <<: *go-env, PORT: "8086" }
+    environment: { <<: *go-env, PORT: "8086", DATABASE_URL: "postgres://svc_notify:${SERVICE_DB_PASSWORD:-udyam-svc}@postgres:5432/${POSTGRES_DB:-udyam}?sslmode=disable" }
   simulator:
     <<: *go-service
     build: { context: ./go, args: { SERVICE: simulator } }
@@ -111,7 +126,7 @@ services:
   scoring:
     <<: *go-service
     build: { context: ./go, args: { SERVICE: scoring } }
-    environment: { <<: *go-env, PORT: "8087", SCORING_IMPORT_CSV: /data/smb_leads.csv }
+    environment: { <<: *go-env, PORT: "8087", DATABASE_URL: "postgres://svc_scoring:${SERVICE_DB_PASSWORD:-udyam-svc}@postgres:5432/${POSTGRES_DB:-udyam}?sslmode=disable", SCORING_IMPORT_CSV: /data/smb_leads.csv }
     volumes: ["./data/smb_leads.csv:/data/smb_leads.csv:ro"]
 
   advisor:

@@ -94,6 +94,7 @@ func main() {
 			a.Mux.HandleFunc("POST /tasks/{id}/claim", s.claim)
 			a.Mux.HandleFunc("POST /tasks/{id}/close", s.close)
 			go outbox.Relay(ctx, a.DB, a.Producer, a.Log)
+			a.Gauge("outbox_pending", outbox.PendingGauge(a.DB))
 			go kafkax.Run(ctx, a.Log, a.Brokers, "scoring",
 				[]string{events.TopicLeadCreated, events.TopicAdvisorProfileUpdated, events.TopicLeadUnclosed}, s.handle)
 			a.Log.Info("model loaded", "version", m.Version, "trees", len(m.Trees))
