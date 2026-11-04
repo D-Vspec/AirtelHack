@@ -1,0 +1,108 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "udyam/rules-quote",
+  "title": "Rules and quote HTTP shapes",
+  "description": "rules: POST /eligibility, POST /bundles (body: {profile}). quote: POST /quotes, GET /quotes/{id}, PATCH /quotes/{id}, POST /quotes/{id}/accept. quote.created and quote.accepted event payloads are a Quote. Go: go/pkg/catalogue, go/cmd/quote. TS: ts/packages/shared/src/rules-quote.ts.",
+  "$defs": {
+    "ExclusionCode": {"enum": ["CITY_TIER_UNAVAILABLE", "BELOW_MIN_EMPLOYEES", "BELOW_MIN_SITES", "GSTIN_REQUIRED", "DEPENDENCY_UNAVAILABLE", "MISSING_INFO"]},
+    "QuoteErrorCode": {"enum": ["INVALID_REQUEST", "UNKNOWN_PRODUCT", "NOT_ELIGIBLE", "QUANTITY_REQUIRED", "INVALID_CONTRACT", "DEPENDENCY_REQUIRED", "QUOTE_NOT_FOUND", "QUOTE_ACCEPTED", "RULES_UNAVAILABLE"]},
+    "ContractMonths": {"enum": [1, 3, 6, 12, 24]},
+    "Product": {
+      "type": "object",
+      "description": "One row of data/product_catalogue.csv, typed",
+      "properties": {
+        "id": {"type": "string"}, "category": {"type": "string"}, "name": {"type": "string"}, "description": {"type": "string"},
+        "unit": {"type": "string"}, "priceMinInr": {"type": "integer"}, "priceMaxInr": {"type": "integer"},
+        "setupFeeInr": {"type": "integer"}, "minContractMonths": {"type": "integer"},
+        "cityTiers": {"type": "array", "items": {"type": "integer"}}, "minEmployees": {"type": "integer"}, "minSites": {"type": "integer"},
+        "requiresGstin": {"type": "boolean"}, "requiresOneOf": {"type": "array", "items": {"type": "string"}},
+        "installDays": {"type": "integer"}, "segments": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "Reason": {
+      "type": "object", "required": ["code", "message"],
+      "properties": {"code": {"$ref": "#/$defs/ExclusionCode"}, "message": {"type": "string"}}
+    },
+    "Exclusion": {
+      "type": "object", "required": ["productId", "productName", "reasons"],
+      "properties": {
+        "productId": {"type": "string"}, "productName": {"type": "string"},
+        "reasons": {"type": "array", "items": {"$ref": "#/$defs/Reason"}},
+        "alternatives": {"type": "array", "items": {"type": "string"}, "description": "Eligible products in the same category, closest price first (max 3)"}
+      }
+    },
+    "EligibilityResponse": {
+      "type": "object", "required": ["eligible", "excluded"],
+      "properties": {
+        "eligible": {"type": "array", "items": {"$ref": "#/$defs/Product"}},
+        "excluded": {"type": "array", "items": {"$ref": "#/$defs/Exclusion"}}
+      }
+    },
+    "BundleItem": {
+      "type": "object", "required": ["productId", "productName", "unit", "optional", "why"],
+      "properties": {
+        "productId": {"type": "string"}, "productName": {"type": "string"}, "unit": {"type": "string"},
+        "quantity": {"type": ["integer", "null"], "description": "From the profile (per site, per user) or 1 for single-instance units; null = ask the owner"},
+        "optional": {"type": "boolean"}, "why": {"type": "string"},
+        "addedFor": {"type": "string", "description": "Set when added automatically as a dependency of this product id"}
+      }
+    },
+    "Bundle": {
+      "type": "object", "required": ["id", "name", "segment", "rationale", "items"],
+      "properties": {
+        "id": {"type": "string"}, "name": {"type": "string"}, "segment": {"type": "string"}, "rationale": {"type": "string"},
+        "items": {"type": "array", "items": {"$ref": "#/$defs/BundleItem"}},
+        "omitted": {"type": "array", "items": {"$ref": "#/$defs/Exclusion"}}
+      }
+    },
+    "BundlesResponse": {"type": "object", "properties": {"bundles": {"type": "array", "items": {"$ref": "#/$defs/Bundle"}}}},
+    "QuoteItem": {
+      "type": "object", "required": ["productId"],
+      "properties": {"productId": {"type": "string"}, "quantity": {"type": "integer", "minimum": 1}}
+    },
+    "QuoteRequest": {
+      "type": "object", "required": ["profile", "items"],
+      "properties": {
+        "leadId": {"type": "string"},
+        "profile": {"$ref": "profile.schema.json"},
+        "items": {"type": "array", "items": {"$ref": "#/$defs/QuoteItem"}},
+        "contractMonths": {"$ref": "#/$defs/ContractMonths", "default": 12}
+      }
+    },
+    "QuotePatch": {
+      "type": "object",
+      "properties": {
+        "toggles": {"type": "array", "items": {"type": "object", "required": ["productId", "enabled"],
+          "properties": {"productId": {"type": "string"}, "enabled": {"type": "boolean"}, "quantity": {"type": "integer", "minimum": 1}}}},
+        "contractMonths": {"$ref": "#/$defs/ContractMonths"}
+      }
+    },
+    "QuoteLine": {
+      "type": "object",
+      "properties": {
+        "productId": {"type": "string"}, "productName": {"type": "string"}, "unit": {"type": "string"},
+        "quantity": {"type": "integer"}, "unitPriceInr": {"type": "integer"}, "monthlyInr": {"type": "integer"},
+        "oneTimeInr": {"type": "integer"}, "contractMonths": {"type": "integer"}, "installDays": {"type": "integer"},
+        "addedFor": {"type": "string"}, "note": {"type": "string"}
+      }
+    },
+    "Quote": {
+      "type": "object",
+      "properties": {
+        "id": {"type": "string"}, "leadId": {"type": "string"}, "status": {"enum": ["draft", "accepted"]},
+        "contractMonths": {"type": "integer"},
+        "lines": {"type": "array", "items": {"$ref": "#/$defs/QuoteLine"}},
+        "monthlyTotalInr": {"type": "integer"}, "oneTimeTotalInr": {"type": "integer"},
+        "totalContractValueInr": {"type": "integer", "description": "sum(monthly x line contract months) + one-time"},
+        "expectedInstallDays": {"type": "integer", "description": "Slowest product's typical install days"},
+        "notes": {"type": "array", "items": {"type": "string"}},
+        "createdAt": {"type": "string", "format": "date-time"}, "acceptedAt": {"type": "string", "format": "date-time"}
+      }
+    },
+    "Error": {
+      "type": "object", "required": ["code", "message"],
+      "properties": {"code": {"$ref": "#/$defs/QuoteErrorCode"}, "message": {"type": "string"},
+        "excluded": {"type": "array", "items": {"$ref": "#/$defs/Exclusion"}}}
+    }
+  }
+}
