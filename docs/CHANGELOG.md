@@ -132,3 +132,38 @@ Cut / risks:
 - The new channel is mapped to "Website form" by assumption.
 - Language and city tier are features, and the leads list shows e.g. "Language: Tamil (lowers the score)". This needs a fairness review before production use (model card, Limits).
 - Reasons approximate SHAP. Partner tasks have no assignment rules beyond claim.
+
+## Phase 8 - Hardening and submission
+Added:
+- **Per-service Postgres roles** (infra/postgres/roles.sql, run by the idempotent `db-roles` compose job on every `up`, so it also upgrades an existing database). Each Go service connects as svc_<name>, owns its schema, and cannot read another: `svc_kyc` reading `quote.quotes` gets "permission denied for schema quote". registry and rules get read-only access to the reference data that `make seed` loads.
+- **Gateway:**
+  - Per-IP token-bucket rate limits: general RATE_LIMIT_RPS=30; advisor chat 0.5/s with a burst of 6; uploads and checks 1/s; 429 with Retry-After.
+  - A JSON 503 UPSTREAM_UNAVAILABLE with Retry-After when a service is down.
+  - Back-office routes need X-Admin-Token (constant-time compare; closed if unset; compose default `demo-admin-token`).
+  - CORS exposes request and correlation IDs.
+- **Observability:**
+  - Prometheus-format `/metrics` on every Go service (requests by route and status class, latency, Kafka processed/retried/dead-lettered, DB pool, outbox backlog, open KYC reviews) and on the advisor.
+  - The access log carries requestId, correlationId and leadId; correlation IDs pass through the gateway.
+  - An admin Status page summarises health and metrics.
+- **Web:** the admin asks for the token once (AdminGate); the shared client sends it; integration tests and E2E send it and back off on 429.
+- **make scenarios** (go/cmd/scenarios): 33 checks mapped to docs/scenarios.md. 10 rules/quote, 10 KYC, 5 fulfilment and ops, 8 live advisor (skipped, not failed, without an LLM key). The 4 unbuilt stories are listed as NOT BUILT.
+- **make drills** (go/integration/drills_test.go): Kafka down, kyc down, Postgres restart, with timings in docs/failure-drills.md.
+- **Dependency audit:** govulncheck found vulnerable pgx 5.7.1, x/crypto 0.27 and x/text 0.18. Upgraded to pgx 5.12, x/crypto 0.58, x/text 0.43. These need Go 1.26 (go.mod `go 1.26.0`, up from the plan's 1.22), and the build images move to golang:1.26-alpine (1.26.10). govulncheck in that image: no vulnerabilities. `pnpm audit --prod`: 2 moderate, in Expo build tooling only.
+- **Deliverables:** docs/architecture.md (Mermaid, demo and national-scale topologies) with PNG exports (ts/apps/web/scripts/render-diagrams.mjs); docs/business-case.md (10 slides, figures from docs/analytics.md and measured results, targets labelled as proposals); docs/privacy-security-note.md (1 page); docs/demo-script.md (3 minutes, shot list); docs/failure-drills.md; README rewritten (quickstart, deliverables, what is and is not verified).
+
+Verified:
+- `make scenarios` 33/33 on the main stack, before and after the Go 1.26 rebuild.
+- `make drills` all pass. Kafka down: quote and KYC still succeed, the backlog is visible, the order catches up 36 s after Kafka starts. kyc down: 503 JSON, the rest unaffected, back in 3 s. Postgres stop: DB requests fail in about 7 s; reconnects 1 s after start with no service restart.
+- Role isolation checked with psql.
+- Gateway guard unit tests (admin routes, token, rate limit).
+- `go test ./...`; TS tests and typecheck.
+- **Fresh clone** (git clone onto D:, the user's .env for the LLM key, isolated compose project `udyamclean` with new volumes): `make up seed smoke scenarios` → SMOKE OK, **33 passed, 0 failed, 0 skipped**, exit 0. The project was removed afterwards (`down -v`, its own volumes only).
+
+Cut / risks:
+- Not built: e-sign (#14), partner attribution (#22), contract-end reminders (#24), OTP at lead entry (#25).
+- Owner routes have no login (scoped by unguessable lead ID). The admin token is a shared secret, not SSO.
+- A Postgres outage costs about 7 s per request before failing (no circuit breaker).
+- The advisor publishes without an outbox.
+- The Expo app was not run on a device.
+- The Go version moved from 1.22 to 1.26 for security fixes.
+- The hidden KYC answer key and the 15 hidden advisor scenarios are unknown; our expectations are documented.
