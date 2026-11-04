@@ -45,3 +45,22 @@ var DefaultRoute = map[string]string{
 	FindingIdExpired:              RouteReupload,
 	FindingSignatoryNotAuthorised: RouteManualReview,
 }
+
+// DefaultSeverity maps a finding code to its severity.
+var DefaultSeverity = map[string]string{
+	FindingDocMissing:             "error",
+	FindingFieldMissing:           "error",
+	FindingImageBlurry:            "error",
+	FindingImageSkewed:            "info",
+	FindingOcrLowConfidence:       "warning",
+	FindingGstinChecksumInvalid:   "error",
+	FindingGstinNotFound:          "error",
+	FindingGstStatusCancelled:     "error",
+	FindingGstStatusSuspended:     "error",
+	FindingUdyamNotFound:          "error",
+	FindingNameMismatch:           "error",
+	FindingAddressMismatch:        "error",
+	FindingDocStale:               "error",
+	FindingIdExpired:              "error",
+	FindingSignatoryNotAuthorised: "error",
+}

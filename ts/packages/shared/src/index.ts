@@ -1,5 +1,7 @@
 export * from "./topics";
 export * from "./kyc-findings";
+export * from "./kyc-messages";
+export * from "./kyc";
 export * from "./envelope";
 export * from "./profile";
 export * from "./i18n";

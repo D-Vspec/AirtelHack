@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "udyam/kyc",
+  "title": "KYC service HTTP shapes and event payloads",
+  "description": "kyc (port 8084, gateway prefix /api/kyc). Consent first: uploads and checks answer 403 CONSENT_REQUIRED without an active consent that includes the purpose kyc_verification. Endpoints: POST /consents (ConsentRequest -> Consent, 201); GET /consents/{leadId}; POST /consents/{leadId}/withdraw (purges documents and results -> Withdrawal); GET /prefill/{gstin} (Prefill, 404 when unknown); PUT /applications/{leadId}/documents/{type} (raw image body, image/png or image/jpeg, max 8 MB -> UploadResult with instant quality feedback); POST /applications/{leadId}/specimens/{applicantId} (demo: loads data/kyc_documents/K01..K12); POST /applications/{leadId}/check (-> Application); GET /applications/{leadId} (-> Application); GET /reviews?status=open|decided (-> {reviews: Review[]}); GET /reviews/{id}; POST /reviews/{id}/decision (ReviewDecision -> Review). Errors: {code, message} with codes CONSENT_REQUIRED, INVALID_REQUEST, UNSUPPORTED_MEDIA, TOO_LARGE, NOT_FOUND, REVIEW_CLOSED, REGISTRY_UNAVAILABLE. Finding codes, severities and routes: contracts/kyc-findings.json; owner text: contracts/kyc-messages.json. Go: go/pkg/kyc, go/cmd/kyc. TS: ts/packages/shared/src/kyc.ts.",
+  "$defs": {
+    "ConsentRequest": {
+      "type": "object", "required": ["leadId", "purposes", "version"], "additionalProperties": false,
+      "properties": {
+        "leadId": {"type": "string", "minLength": 1, "maxLength": 64},
+        "purposes": {"type": "array", "minItems": 1, "items": {"enum": ["kyc_verification", "service_provisioning", "communication"]}},
+        "version": {"type": "string", "description": "Consent text version shown to the owner, e.g. 2026-07-v1"},
+        "language": {"type": "string", "description": "Language code the consent text was shown in"}
+      }
+    },
+    "Consent": {
+      "type": "object", "required": ["id", "leadId", "purposes", "version", "grantedAt"],
+      "properties": {
+        "id": {"type": "string"}, "leadId": {"type": "string"},
+        "purposes": {"type": "array", "items": {"type": "string"}},
+        "version": {"type": "string"}, "language": {"type": "string"},
+        "grantedAt": {"type": "string", "format": "date-time"},
+        "withdrawnAt": {"type": ["string", "null"], "format": "date-time"}
+      }
+    },
+    "Withdrawal": {
+      "type": "object", "required": ["leadId", "withdrawnAt", "purgedDocuments"],
+      "properties": {"consentId": {"type": "string"}, "leadId": {"type": "string"}, "withdrawnAt": {"type": "string", "format": "date-time"}, "purgedDocuments": {"type": "integer"}}
+    },
+    "Prefill": {
+      "type": "object", "required": ["matchType", "checksumValid"],
+      "properties": {
+        "matchType": {"enum": ["exact", "corrected", "none"]},
+        "checksumValid": {"type": "boolean"},
+        "gstin": {"type": "string", "description": "The registry GSTIN (after OCR-confusion correction)"},
+        "legalName": {"type": "string"}, "tradeName": {"type": "string"}, "constitution": {"type": "string"},
+        "address": {"type": "string"}, "state": {"type": "string"}, "status": {"type": "string"},
+        "suggestionCount": {"type": "integer", "description": "Near-miss registry entries (not returned, to avoid enumeration)"}
+      }
+    },
+    "UploadResult": {
+      "type": "object", "required": ["leadId", "type", "bytes"],
+      "properties": {
+        "leadId": {"type": "string"}, "type": {"$ref": "kyc-findings.json#/documentTypes"}, "bytes": {"type": "integer"},
+        "sharpness": {"type": "number"}, "blurry": {"type": "boolean"}, "skewDeg": {"type": "number"},
+        "findings": {"type": "array", "items": {"$ref": "#/$defs/Finding"}, "description": "Instant image-quality findings (IMAGE_BLURRY, IMAGE_SKEWED)"}
+      }
+    },
+    "Finding": {
+      "type": "object", "required": ["code", "severity", "route", "stage", "messageKey"],
+      "properties": {
+        "code": {"type": "string"}, "severity": {"enum": ["info", "warning", "error"]},
+        "route": {"enum": ["pass", "reupload", "manual_review", "reject"]},
+        "stage": {"enum": ["completeness", "image_quality", "ocr", "identifiers", "registry_status", "name_match", "address_match", "document_age", "signatory_id"]},
+        "document": {"type": "string"}, "messageKey": {"type": "string", "description": "kyc.finding.<code>"},
+        "params": {"type": "object", "additionalProperties": {"type": "string"}, "description": "Identifiers are masked"},
+        "detail": {"type": "string", "description": "English explanation for reviewers"}
+      }
+    },
+    "Application": {
+      "type": "object", "required": ["leadId", "status", "documents"],
+      "properties": {
+        "leadId": {"type": "string"},
+        "status": {"enum": ["collecting", "pass", "reupload", "manual_review", "reject"], "description": "collecting until the first check; afterwards the latest route (a reviewer decision overrides manual_review)"},
+        "documents": {"type": "array", "items": {"type": "string"}, "description": "Document types currently uploaded"},
+        "route": {"type": "string"},
+        "findings": {"type": "array", "items": {"$ref": "#/$defs/Finding"}},
+        "verified": {"type": "object", "description": "gstin (masked), gstinMatchType, gstinRecord, udyamNumber (masked), udyamMatchType, udyamRecord"},
+        "reviewId": {"type": "string"},
+        "checkedAt": {"type": "string", "format": "date-time"}
+      }
+    },
+    "Review": {
+      "type": "object", "required": ["id", "leadId", "status", "codes", "createdAt"],
+      "properties": {
+        "id": {"type": "string"}, "leadId": {"type": "string"}, "status": {"enum": ["open", "decided"]},
+        "codes": {"type": "array", "items": {"type": "string"}},
+        "findings": {"type": "array", "items": {"$ref": "#/$defs/Finding"}},
+        "decision": {"enum": ["approve", "reject", "request_reupload"]}, "reviewer": {"type": "string"}, "note": {"type": "string"},
+        "createdAt": {"type": "string", "format": "date-time"}, "decidedAt": {"type": "string", "format": "date-time"}
+      }
+    },
+    "ReviewDecision": {
+      "type": "object", "required": ["decision", "reviewer"], "additionalProperties": false,
+      "properties": {"decision": {"enum": ["approve", "reject", "request_reupload"]}, "reviewer": {"type": "string", "minLength": 1}, "note": {"type": "string", "maxLength": 1000}}
+    },
+    "events": {
+      "description": "Payloads (envelope: contracts/events.schema.json; key leadId).",
+      "consent.recorded": {"$ref": "#/$defs/Consent"},
+      "consent.withdrawn": {"$ref": "#/$defs/Withdrawal"},
+      "kyc.submitted": {"type": "object", "properties": {"leadId": {"type": "string"}, "documents": {"type": "array", "items": {"type": "string"}}}},
+      "kyc.checked": {"type": "object", "description": "One per stage that produced findings", "properties": {"leadId": {"type": "string"}, "stage": {"type": "string"}, "findings": {"type": "array", "items": {"$ref": "#/$defs/Finding"}}}},
+      "kyc.passed": {"type": "object", "properties": {"leadId": {"type": "string"}, "decidedBy": {"enum": ["pipeline", "reviewer"]}, "reviewId": {"type": "string"}, "gstinMasked": {"type": "string"}}},
+      "kyc.failed": {"type": "object", "properties": {"leadId": {"type": "string"}, "route": {"enum": ["reupload", "reject"]}, "codes": {"type": "array", "items": {"type": "string"}}, "decidedBy": {"enum": ["pipeline", "reviewer"]}, "reviewId": {"type": "string"}}},
+      "kyc.review.requested": {"type": "object", "properties": {"leadId": {"type": "string"}, "reviewId": {"type": "string"}, "codes": {"type": "array", "items": {"type": "string"}}}}
+    }
+  }
+}

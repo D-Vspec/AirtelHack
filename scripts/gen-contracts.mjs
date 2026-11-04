@@ -29,7 +29,24 @@ write("go/pkg/events/kyc_gen.go",
   kyc.findings.map((f) => `\tFinding${pascal(f.code.toLowerCase())} = "${f.code}"`).join("\n") + "\n)\n\nconst (\n" +
   kyc.routes.map((r) => `\tRoute${pascal(r)} = "${r}"`).join("\n") + "\n)\n\n" +
   "// DefaultRoute maps a finding code to its default route.\nvar DefaultRoute = map[string]string{\n" +
-  kyc.findings.map((f) => `\tFinding${pascal(f.code.toLowerCase())}: Route${pascal(f.route)},`).join("\n") + "\n}\n");
+  kyc.findings.map((f) => `\tFinding${pascal(f.code.toLowerCase())}: Route${pascal(f.route)},`).join("\n") + "\n}\n\n" +
+  "// DefaultSeverity maps a finding code to its severity.\nvar DefaultSeverity = map[string]string{\n" +
+  kyc.findings.map((f) => `\tFinding${pascal(f.code.toLowerCase())}: "${f.severity}",`).join("\n") + "\n}\n");
+
+// KYC finding messages (contracts/kyc-messages.json): every code needs text in every language.
+const msgs = read("contracts/kyc-messages.json");
+for (const f of kyc.findings) {
+  for (const lang of msgs.languages) {
+    const m = msgs.messages[f.code]?.[lang];
+    if (!m || !m.message || !m.action) throw new Error(`kyc-messages.json: missing ${lang} text for ${f.code}`);
+  }
+}
+write("ts/packages/shared/src/kyc-messages.ts",
+  HDR + `export const KYC_MESSAGE_LANGUAGES = ${JSON.stringify(msgs.languages)} as const;\n` +
+  "export type KycMessageLanguage = (typeof KYC_MESSAGE_LANGUAGES)[number];\n\n" +
+  "/** Owner-facing text per finding code: what went wrong and the next step. Message key: kyc.finding.<CODE>. */\n" +
+  "export const KYC_MESSAGES: Record<string, Record<KycMessageLanguage, { message: string; action: string }>> = " +
+  JSON.stringify(msgs.messages, null, 2) + ";\n");
 
 // TS topics
 write("ts/packages/shared/src/topics.ts",
