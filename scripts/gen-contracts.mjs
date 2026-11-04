@@ -12,6 +12,12 @@ const upper = (s) => s.replace(/\./g, "_").toUpperCase();
 
 const { topics } = read("contracts/topics.json");
 const kyc = read("contracts/kyc-findings.json");
+const kycText = read("contracts/kyc-messages.json");
+const LANGS = ["en", "hi", "bn", "te", "mr", "ta", "gu", "kn", "ml", "pa"];
+for (const [what, table, keys] of [["message", kycText.messages, kyc.findings.map((f) => f.code)], ["document", kycText.documents, kyc.documentTypes]]) {
+  for (const k of keys) for (const l of LANGS) if (!table[k]?.[l]) throw new Error(`contracts/kyc-messages.json: ${what} ${k} has no "${l}" text`);
+}
+const goMap = (table) => Object.entries(table).map(([k, v]) => `\t${JSON.stringify(k)}: {${LANGS.map((l) => `${JSON.stringify(l)}: ${JSON.stringify(v[l])}`).join(", ")}},`).join("\n");
 
 // Kafka topics list for infra/kafka/create-topics.sh (name:partitions)
 write("infra/kafka/topics.txt", topics.map((t) => `${t.name}:${t.partitions}`).join("\n") + "\n");
@@ -29,7 +35,12 @@ write("go/pkg/events/kyc_gen.go",
   kyc.findings.map((f) => `\tFinding${pascal(f.code.toLowerCase())} = "${f.code}"`).join("\n") + "\n)\n\nconst (\n" +
   kyc.routes.map((r) => `\tRoute${pascal(r)} = "${r}"`).join("\n") + "\n)\n\n" +
   "// DefaultRoute maps a finding code to its default route.\nvar DefaultRoute = map[string]string{\n" +
-  kyc.findings.map((f) => `\tFinding${pascal(f.code.toLowerCase())}: Route${pascal(f.route)},`).join("\n") + "\n}\n");
+  kyc.findings.map((f) => `\tFinding${pascal(f.code.toLowerCase())}: Route${pascal(f.route)},`).join("\n") + "\n}\n\n" +
+  "// DefaultSeverity maps a finding code to its severity.\nvar DefaultSeverity = map[string]string{\n" +
+  kyc.findings.map((f) => `\tFinding${pascal(f.code.toLowerCase())}: ${JSON.stringify(f.severity)},`).join("\n") + "\n}\n\n" +
+  `// KYCLanguages are the language codes every finding message exists in.\nvar KYCLanguages = []string{${LANGS.map((l) => JSON.stringify(l)).join(", ")}}\n\n` +
+  "// KYCMessages is owner-facing text per finding code and language; {doc} is a document name from KYCDocumentNames.\nvar KYCMessages = map[string]map[string]string{\n" + goMap(kycText.messages) + "\n}\n\n" +
+  "// KYCDocumentNames is each document type's name per language.\nvar KYCDocumentNames = map[string]map[string]string{\n" + goMap(kycText.documents) + "\n}\n");
 
 // TS topics
 write("ts/packages/shared/src/topics.ts",
@@ -43,4 +54,7 @@ write("ts/packages/shared/src/kyc-findings.ts",
   `export const KYC_DOCUMENT_TYPES = ${JSON.stringify(kyc.documentTypes)} as const;\nexport type KycDocumentType = (typeof KYC_DOCUMENT_TYPES)[number];\n\n` +
   "export const KYC_FINDINGS = {\n" +
   kyc.findings.map((f) => `  ${f.code}: { severity: "${f.severity}", route: "${f.route}", description: ${JSON.stringify(f.description)} },`).join("\n") +
-  "\n} as const;\n\nexport type KycFindingCode = keyof typeof KYC_FINDINGS;\n");
+  "\n} as const;\n\nexport type KycFindingCode = keyof typeof KYC_FINDINGS;\n\n" +
+  "/** Owner-facing text per finding code and language code; {doc} is replaced by KYC_DOCUMENT_NAMES[type][lang]. */\n" +
+  `export const KYC_MESSAGES: Record<KycFindingCode, Record<string, string>> = ${JSON.stringify(kycText.messages, null, 2)};\n\n` +
+  `export const KYC_DOCUMENT_NAMES: Record<KycDocumentType, Record<string, string>> = ${JSON.stringify(kycText.documents, null, 2)};\n`);
