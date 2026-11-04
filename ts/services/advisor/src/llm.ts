@@ -1,4 +1,26 @@
 import type { BaseChatModel } from "@langchain/core/language_models/chat_models";
+import { HumanMessage, SystemMessage } from "@langchain/core/messages";
+import { AdvisorExtraction } from "@udyam/shared";
+import type { Llm } from "./advisor.ts";
+import { extractionPrompt, writerPrompt } from "./prompts.ts";
+
+/** Advisor LLM roles on top of any LangChain chat model: structured extraction and reply writing. */
+export function advisorLlm(model: BaseChatModel): Llm {
+  const extractor = model.withStructuredOutput(AdvisorExtraction, { name: "extract_profile" });
+  return {
+    async extract(input) {
+      const { system, human } = extractionPrompt(input);
+      return AdvisorExtraction.parse(await extractor.invoke([new SystemMessage(system), new HumanMessage(human)]));
+    },
+    async write(input) {
+      const { system, human } = writerPrompt(input);
+      const res = await model.invoke([new SystemMessage(system), new HumanMessage(human)]);
+      return typeof res.content === "string"
+        ? res.content.trim()
+        : res.content.map((c) => ("text" in c && typeof c.text === "string" ? c.text : "")).join("").trim();
+    },
+  };
+}
 
 export type Provider = "gemini" | "anthropic" | "openai";
 type Env = Record<string, string | undefined>;
