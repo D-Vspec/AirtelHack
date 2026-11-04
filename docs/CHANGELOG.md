@@ -16,3 +16,10 @@ Added: `make seed` (go/cmd/seed) loads the four case CSVs into leads.smb_leads, 
 Verified: `make seed` twice and from dropped tables; registry unit tests (all 3,534 registry GSTINs pass the checksum; K01-K12 certificate GSTINs as tesseract reads them resolve as documented); live lookups through the gateway; `make smoke`.
 
 Notes: drop reasons use four buckets (fixable_by_digital 1,485, before_first_contact 1,594, pricing 621, out_of_scope 932). Registry data is held in memory, loaded on first request, so the service starts before seeding; restart registry after a re-seed with changed data.
+
+## Phase 2 - Rules, catalogue and quote
+Added: contracts/rules-quote.schema.json (HTTP shapes, reason and error codes). go/pkg/catalogue: typed catalogue parser, eligibility (city tier, min employees, min sites, GSTIN, requires_one_of; unknown values give MISSING_INFO), same-category alternatives, segment bundle templates plus a mobile-only quick path, automatic dependency completion, deterministic pricing and add-on toggles. Rules service: GET /products, POST /eligibility, POST /bundles (reads catalogue.product_catalogue). Quote service: POST/GET/PATCH /quotes, POST /quotes/{id}/accept; it calls rules over HTTP, stores quotes in quote.quotes, and emits quote.created and quote.accepted. svc.DecodeJSON gives strict request decoding. docs/rules.md lists every rule with its source column.
+
+Verified: `go test ./...` (39 scenario cases, price-range and monotonicity invariants for all 25 products); live run through the gateway covering eligibility, bundles, a CCTV quote with fibre auto-added, a blocked dependency removal (409), an add-on toggle, accept, the NOT_ELIGIBLE path, and both events read back from Kafka.
+
+Cut / risks: no event on PATCH (only create and accept); events are published after the DB write with no outbox (Phase 5). Pricing by size uses item quantity, not employee count; it is our formula, not given by the case.
