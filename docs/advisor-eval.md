@@ -1,6 +1,6 @@
 # Advisor eval
 
-**Status: not run yet.** The build machine has no LLM API key, so no provider has been scored. Nothing below is a result.
+**Status (2026-11-04):** deepseek/deepseek-flash (V4.1 Flash) 27/27, meets the 90% target. openai/gpt-4o 23/27, below target. Gemini and Anthropic not run (no keys).
 
 Run it after `make up seed` with a key in `.env`:
 
