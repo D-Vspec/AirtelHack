@@ -1,5 +1,7 @@
 # 3-minute demo video: script and shot list
 
+> Updated version with the account / KYC-reuse step and a full test matrix: `docs/video/Udyam_Digital_Video_Script.docx` (and `.pptx`), built from `docs/video/content.json`.
+
 About 420 words of voice-over: 2:50 at a calm pace, leaving 10 s of slack. Record the screen at 1080p. Show the phone journey in a 390×844 browser window (or a real phone) next to the desktop back office.
 
 **Before recording**
