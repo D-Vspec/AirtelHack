@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 import { LANGUAGES, type LangCode, type StringKey } from "@udyam/shared";
 import { useJourney } from "@/lib/journey";
+import { AccountLink } from "./account-link";
 import { IconAlert, IconCamera, IconChat, IconCheck, IconGlobe, IconReceipt, IconShield, IconSparkle, IconTruck } from "@/components/icons";
 
 export function Button({ variant = "primary", className = "", ...p }: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: "primary" | "secondary" | "ghost" | "danger" | "dark" }) {
@@ -149,7 +150,7 @@ export function Shell({ step, title, children }: { step: number; title: string; 
       <header className="sticky top-0 z-30 bg-ink-900 text-white">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-2.5">
           <Logo dark />
-          <LanguagePicker compact dark />
+          <div className="flex items-center gap-2"><AccountLink /><LanguagePicker compact dark /></div>
         </div>
         {/* phones and tablets: compact progress with the current step named */}
         <ol className="mx-auto flex max-w-6xl gap-1.5 px-4 pb-3 lg:hidden" aria-label="progress">

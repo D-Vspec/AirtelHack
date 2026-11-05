@@ -4,9 +4,15 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import { createApiClient, newLeadId, t as translate, type BusinessProfile, type LangCode, type StringKey } from "@udyam/shared";
 
 export const ADMIN_TOKEN_KEY = "udyam.adminToken";
+/** A signed-in customer: { token, mobileMasked } (lib/account.ts). */
+export const ACCOUNT_KEY = "udyam.account.v1";
 // The back office sends its token (gateway ADMIN_TOKEN) from localStorage; owner routes need none.
 export const api = createApiClient(process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080/api", {
   adminToken: () => (typeof window === "undefined" ? null : localStorage.getItem(ADMIN_TOKEN_KEY)),
+  accountToken: () => {
+    if (typeof window === "undefined") return null;
+    try { return (JSON.parse(localStorage.getItem(ACCOUNT_KEY) ?? "null") as { token?: string } | null)?.token ?? null; } catch { return null; }
+  },
 });
 
 export interface ChatMessage {
@@ -66,6 +72,12 @@ export function JourneyProvider({ children }: { children: ReactNode }) {
     if (ready) localStorage.setItem(KEY, JSON.stringify(j));
     document.documentElement.lang = j.lang;
   }, [j, ready]);
+
+  // A signed-in owner's new orders join their account (so a later order can reuse their KYC).
+  useEffect(() => {
+    if (!ready || !j.leadId || !localStorage.getItem(ACCOUNT_KEY)) return;
+    api.accounts.linkLead(j.leadId).catch(() => { /* taken by another account or signed out: stays a guest order */ });
+  }, [ready, j.leadId]);
 
   const update = useCallback<Ctx["update"]>((patch) => {
     setJ((cur) => ({ ...cur, ...(typeof patch === "function" ? patch(cur) : patch) }));

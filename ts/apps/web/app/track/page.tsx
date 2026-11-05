@@ -17,14 +17,20 @@ export default function TrackPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // /track?lead=<id> opens a past order from the account page; otherwise the current journey's
+  const [lead, setLead] = useState<string | null>(null);
   useEffect(() => {
-    if (!ready) return;
+    if (ready) setLead(new URLSearchParams(window.location.search).get("lead") || j.leadId);
+  }, [ready, j.leadId]);
+
+  useEffect(() => {
+    if (!lead) return;
     let stop = false;
     async function poll() {
       try {
-        const { orders } = await api.tracker.orders({ leadId: j.leadId });
+        const { orders } = await api.tracker.orders({ leadId: lead! });
         if (orders[0]) setTl(await api.tracker.timeline(orders[0].id));
-        setMsgs((await api.notify.messages(j.leadId)).messages);
+        setMsgs((await api.notify.messages(lead!)).messages);
       } catch {
         /* keep the last good state; polling retries */
       }
@@ -33,7 +39,7 @@ export default function TrackPage() {
     }
     void poll();
     return () => { stop = true; };
-  }, [ready, j.leadId]);
+  }, [lead]);
 
   async function acceptFallback() {
     if (!tl) return;

@@ -1,6 +1,6 @@
 import type { BusinessProfile } from "./profile";
 import type { Eligibility, Product, Quote } from "./advisor";
-import type { Consent, ConsentRequest, KycApplication, KycReview, Prefill, ReviewDecision, UploadResult, Withdrawal } from "./kyc";
+import type { AccountView, Consent, ConsentRequest, KycApplication, KycReview, OtpSent, Prefill, ReuseStatus, ReviewDecision, SignIn, UploadResult, Withdrawal } from "./kyc";
 import type { KycDocumentType } from "./kyc-findings";
 import type { Order, ResumeState, SentMessage, Timeline, Transition } from "./orders";
 import type { HandoffReason, LeadScore, PartnerTask, ScoredLead } from "./scoring";
@@ -46,11 +46,13 @@ export interface QuoteToggle {
 }
 
 /** Typed client for the gateway (contracts/*.schema.json). Every path is relative to NEXT_PUBLIC_API_URL / EXPO_PUBLIC_API_URL. */
-export function createApiClient(baseUrl: string, opts: { adminToken?: () => string | null | undefined } = {}) {
+/** adminToken: back-office X-Admin-Token. accountToken: a signed-in customer (Authorization: Bearer). */
+export function createApiClient(baseUrl: string, opts: { adminToken?: () => string | null | undefined; accountToken?: () => string | null | undefined } = {}) {
   const root = baseUrl.replace(/\/$/, "");
   const adminHeader = (): Record<string, string> => {
     const token = opts.adminToken?.();
-    return token ? { "X-Admin-Token": token } : {};
+    const account = opts.accountToken?.();
+    return { ...(token ? { "X-Admin-Token": token } : {}), ...(account ? { Authorization: `Bearer ${account}` } : {}) };
   };
   async function request<T>(path: string, init?: RequestInit): Promise<T> {
     const isJson = !(init?.body instanceof Blob) && !(init?.body instanceof ArrayBuffer);
@@ -123,6 +125,16 @@ export function createApiClient(baseUrl: string, opts: { adminToken?: () => stri
       reviews: (status?: "open" | "decided") => request<{ reviews: KycReview[] }>(`/kyc/reviews${q({ status })}`),
       review: (id: string) => request<KycReview>(`/kyc/reviews/${encodeURIComponent(id)}`),
       decide: (id: string, body: ReviewDecision) => request<KycReview>(`/kyc/reviews/${encodeURIComponent(id)}/decision`, json("POST", body)),
+    },
+    accounts: {
+      requestCode: (mobile: string) => request<OtpSent>("/kyc/accounts/otp", json("POST", { mobile })),
+      verify: (body: { mobile: string; code: string; leadId?: string }) => request<SignIn>("/kyc/accounts/verify", json("POST", body)),
+      me: () => request<AccountView>("/kyc/accounts/me"),
+      linkLead: (leadId: string) => request<{ leadId: string; accountId: string }>("/kyc/accounts/me/leads", json("POST", { leadId })),
+      logout: () => request<{ signedOut: boolean }>("/kyc/accounts/me/logout", json("POST")),
+      reuseStatus: (leadId?: string) => request<ReuseStatus>(`/kyc/accounts/me/kyc-reuse${q({ leadId })}`),
+      reuse: (leadId: string, unchanged: boolean) =>
+        request<KycApplication & { reusedFrom: string }>(`/kyc/applications/${encodeURIComponent(leadId)}/reuse`, json("POST", { unchanged })),
     },
     tracker: {
       orders: (params: { leadId?: string; status?: string } = {}) => request<{ orders: Order[] }>(`/tracker/orders${q(params)}`),

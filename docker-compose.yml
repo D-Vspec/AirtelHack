@@ -108,7 +108,7 @@ services:
   kyc:
     <<: *go-service
     build: { context: ./go, args: { SERVICE: kyc } }
-    environment: { <<: *go-env, PORT: "8084", DATABASE_URL: "postgres://svc_kyc:${SERVICE_DB_PASSWORD:-udyam-svc}@postgres:5432/${POSTGRES_DB:-udyam}?sslmode=disable" }
+    environment: { <<: *go-env, PORT: "8084", KYC_DEMO_OTP: "${KYC_DEMO_OTP:-true}", DATABASE_URL: "postgres://svc_kyc:${SERVICE_DB_PASSWORD:-udyam-svc}@postgres:5432/${POSTGRES_DB:-udyam}?sslmode=disable" }
     volumes: ["./data/kyc_documents:/data/kyc_documents:ro"]
   tracker:
     <<: *go-service

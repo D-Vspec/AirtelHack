@@ -108,3 +108,32 @@ export interface ReviewDecision {
   reviewer: string;
   note?: string;
 }
+
+// ---- Customer accounts (contracts/kyc.schema.json OtpSent, Account, AccountView, ReuseStatus) ----
+
+export interface OtpSent { sent: boolean; mobileMasked: string; expiresInSeconds: number; /** prototype only */ demoCode?: string }
+export interface Account { id: string; mobileMasked: string; createdAt: string }
+export interface SignIn { token: string; account: Account }
+export interface VerifiedBusiness {
+  fromLeadId: string; verifiedAt: string; gstinMasked: string; udyamMasked: string;
+  legalName?: string; tradeName?: string; address?: string;
+}
+export interface AccountLead { leadId: string; linkedAt: string; kycStatus: string; reusedKyc: boolean }
+export interface AccountView { account: Account; leads: AccountLead[]; verified: VerifiedBusiness | null }
+
+export const REUSE_REASONS = ["NO_VERIFICATION", "OWNER_CHANGED", "VERIFICATION_EXPIRED", "SIGNATORY_ID_EXPIRED", "GSTIN_NOT_ACTIVE",
+  "REGISTRY_DETAILS_CHANGED", "UDYAM_NOT_FOUND", "REGISTRY_UNAVAILABLE"] as const;
+export type ReuseReason = (typeof REUSE_REASONS)[number];
+export interface ReuseStatus { reusable: boolean; reasons: ReuseReason[]; verified: VerifiedBusiness | null }
+
+/** Why the earlier verification can't be reused, in plain English (the KYC screen asks for documents). */
+export const REUSE_REASON_TEXT: Record<ReuseReason, string> = {
+  NO_VERIFICATION: "No verified documents on your account yet.",
+  OWNER_CHANGED: "You told us your business details changed.",
+  VERIFICATION_EXPIRED: "Your last verification is more than a year old.",
+  SIGNATORY_ID_EXPIRED: "The signatory ID we verified has expired.",
+  GSTIN_NOT_ACTIVE: "The GST registry no longer shows your GSTIN as active.",
+  REGISTRY_DETAILS_CHANGED: "Your business name or address changed in the GST registry.",
+  UDYAM_NOT_FOUND: "Your Udyam number is no longer in the registry.",
+  REGISTRY_UNAVAILABLE: "We couldn't reach the registry to re-check your details.",
+};

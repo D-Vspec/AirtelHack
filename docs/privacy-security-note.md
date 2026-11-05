@@ -14,6 +14,7 @@ For: compliance / DPO, KYC and risk, and the hackathon judges. It describes what
 
 **Retention**
 - Images: deleted at the final decision (pass, reject or reviewer decision), or after 30 days (`KYC_DOC_RETENTION_DAYS`).
+- Customer accounts: mobile number + one-time code (codes and session tokens stored only as SHA-256 hashes). The verified facts from a passed check (not the images) let a later order skip KYC for up to 365 days, only if the owner confirms nothing changed and a live registry re-check matches; withdrawing consent on that order deletes them.
 - Extracted fields and findings: kept while consent is active. A fixed period must be set with compliance before launch.
 - Resume links expire after 7 days and carry only a random token.
 

@@ -167,3 +167,8 @@ Cut / risks:
 - The Expo app was not run on a device.
 - The Go version moved from 1.22 to 1.26 for security fixes.
 - The hidden KYC answer key and the 15 hidden advisor scenarios are unknown; our expectations are documented.
+
+## Returning customers (2026-11-05)
+Added: customer accounts in the kyc service (mobile + one-time code; demo shows the code on screen, `KYC_DEMO_OTP`), `/account` page with every past order and tracking (`/track?lead=`), "Start a new order", and KYC reuse: `go/pkg/kyc` ReusePolicy re-checks the GST and Udyam registries, signatory ID validity and age (365 days) and needs the owner's "nothing changed" confirmation; anything else runs the full pipeline. `kyc.passed` gains `decidedBy: reuse`. Advisor: owner-stated user counts ("only 5 people on the cloud") re-quote at once.
+Verified: go test ./..., advisor tests 15/15 and eval 27/27 (DeepSeek), smoke, web E2E (phone), mobile E2E, new `make account-e2e` (sign in, track a past order, new order verified without uploads).
+Not done: account screens in the Expo app; real SMS for the code; account deletion endpoint.

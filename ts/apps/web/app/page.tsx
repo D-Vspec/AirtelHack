@@ -6,6 +6,7 @@ import { DEMO_OWNERS, LANGUAGES } from "@udyam/shared";
 import { Button, Card, LanguagePicker, Logo, Pill } from "@/components/ui";
 import { IconArrow, IconBolt, IconCamera, IconChat, IconReceipt, IconShield, IconTruck } from "@/components/icons";
 import { useJourney } from "@/lib/journey";
+import { AccountLink } from "@/components/account-link";
 
 /** A phone sketch in plain SVG shapes: no images to download on a slow connection. */
 function PhoneArt() {
@@ -42,7 +43,7 @@ export default function Home() {
       <section className="bg-hero text-white">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
           <Logo dark />
-          <LanguagePicker compact dark />
+          <div className="flex items-center gap-2"><AccountLink /><LanguagePicker compact dark /></div>
         </div>
         <div className="mx-auto grid max-w-6xl items-center gap-8 px-4 pt-6 pb-24 md:grid-cols-[1.2fr_1fr] md:pt-10 md:pb-32">
           <div>

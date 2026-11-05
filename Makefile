@@ -67,6 +67,9 @@ web: ## build and serve the web app on :3000 (production build)
 web-e2e: ## demo path in a real browser (Edge/Chrome), phone + desktop; screenshots to docs/screens (needs make up seed, LLM key, make web)
 	cd ts/apps/web && node scripts/e2e.mjs
 
+account-e2e: ## returning customer in a real browser: sign in, past orders, new order reusing KYC (needs make up seed, make web; no LLM)
+	cd ts/apps/web && node scripts/e2e-account.mjs
+
 mobile-e2e: ## the Expo app's journey on its web build at phone size; screenshots to docs/screens
 	cd ts/apps/mobile && npx expo export --platform web --output-dir dist-web
 	cd ts/apps/web && MOBILE_DIR=../mobile/dist-web node scripts/e2e-mobile.mjs

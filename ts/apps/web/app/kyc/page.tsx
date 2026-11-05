@@ -3,11 +3,12 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { type KycApplication, type KycDocumentType, type KycFinding, type Prefill, type StringKey } from "@udyam/shared";
+import { REUSE_REASON_TEXT, type KycApplication, type KycDocumentType, type KycFinding, type Prefill, type ReuseStatus, type StringKey } from "@udyam/shared";
 import { ActionBar, Alert, Button, Card, Pill, Shell, Skeleton, Spinner } from "@/components/ui";
 import { IconArrow, IconCamera, IconCheck, IconShield } from "@/components/icons";
 import { api, errorText, useJourney } from "@/lib/journey";
 import { FindingItem } from "@/components/finding";
+import { at, useAccount } from "@/lib/account";
 
 const DOCS: { type: KycDocumentType; label: StringKey }[] = [
   { type: "gst_certificate", label: "docGst" },
@@ -38,6 +39,33 @@ export default function KycPage() {
   const [result, setResult] = useState<KycApplication | null>(null);
   const [gstin, setGstin] = useState("");
   const [prefill, setPrefill] = useState<Prefill | null | "none">(null);
+  // returning customer: reuse the account's earlier verification (go/pkg/kyc ReusePolicy decides)
+  const { account, ready: accountReady } = useAccount();
+  const [reuse, setReuse] = useState<ReuseStatus | null>(null);
+  const [unchanged, setUnchanged] = useState(false);
+  const [reuseRefused, setReuseRefused] = useState<string[] | null>(null);
+  const [reuseHidden, setReuseHidden] = useState(false);
+
+  useEffect(() => {
+    if (!ready || !accountReady || !account || !j.leadId) return;
+    api.accounts.reuseStatus(j.leadId).then(setReuse).catch(() => setReuse(null));
+  }, [ready, accountReady, account, j.leadId]);
+
+  async function useVerified() {
+    setBusy("reuse");
+    setError(null);
+    try {
+      const r = await api.accounts.reuse(j.leadId, unchanged);
+      setResult(r);
+      setReuseHidden(true);
+    } catch (e) {
+      const reasons = ((e as { body?: { reasons?: string[] } }).body?.reasons) ?? null;
+      if (reasons) setReuseRefused(reasons);
+      else setError(errorText(e, t("error")));
+    } finally {
+      setBusy(null);
+    }
+  }
 
   // resume: show what is already on file
   useEffect(() => {
@@ -125,6 +153,41 @@ export default function KycPage() {
     <Shell step={3} title={t("stepKyc")}>
       {!j.consented && (
         <div className="mb-4"><Alert tone="warning">{t("consentTitle")}: <Link className="font-semibold underline" href="/consent">{t("agree")}</Link></Alert></div>
+      )}
+
+      {accountReady && !account && !result && (
+        <p className="mb-4 text-sm"><Link href="/account" className="font-semibold text-brand-700 underline">{at(j.lang, "signInToSkip")}</Link></p>
+      )}
+      {reuse?.reusable && reuse.verified && !result && !reuseHidden && (
+        <Card className="mb-4 animate-rise ring-2 ring-mint-600/40" >
+          <div data-testid="reuse-card" className="space-y-3">
+            <div className="flex items-start gap-3">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-mint-50 text-mint-600"><IconShield size={22} /></span>
+              <div className="min-w-0">
+                <h2 className="font-bold">{at(j.lang, "reuseTitle")}</h2>
+                <p className="text-ink-700">{at(j.lang, "reuseBody")}</p>
+                <p className="mt-1 text-sm font-semibold">{reuse.verified.tradeName || reuse.verified.legalName} · GSTIN {reuse.verified.gstinMasked}</p>
+                <p className="text-sm text-ink-500">{reuse.verified.address} · {at(j.lang, "verifiedOn")} {new Date(reuse.verified.verifiedAt).toLocaleDateString()}</p>
+              </div>
+            </div>
+            <label className="flex items-start gap-3 rounded-2xl bg-ink-50 p-3 text-sm">
+              <input type="checkbox" data-testid="unchanged" checked={unchanged} onChange={(e) => setUnchanged(e.target.checked)} className="mt-0.5 h-5 w-5 accent-[#e40000]" />
+              <span>{at(j.lang, "unchanged")}</span>
+            </label>
+            {reuseRefused && (
+              <Alert tone="warning"><p className="font-semibold">{at(j.lang, "reuseNotPossible")}</p>
+                <ul className="list-disc pl-5">{reuseRefused.map((r) => <li key={r}>{REUSE_REASON_TEXT[r as keyof typeof REUSE_REASON_TEXT] ?? r}</li>)}</ul></Alert>
+            )}
+            <div className="flex flex-wrap items-center gap-3">
+              <Button data-testid="reuse-kyc" disabled={!!busy || !unchanged || !j.consented} onClick={useVerified}>{busy === "reuse" ? <Spinner /> : <IconCheck size={18} />}{at(j.lang, "reuseButton")}</Button>
+              <button className="text-sm text-ink-500 underline" onClick={() => setReuseHidden(true)}>{at(j.lang, "somethingChanged")}</button>
+            </div>
+          </div>
+        </Card>
+      )}
+      {reuse && !reuse.reusable && reuse.verified && !result && (
+        <div className="mb-4"><Alert tone="info"><p className="font-semibold">{at(j.lang, "reuseNotPossible")}</p>
+          <ul className="list-disc pl-5">{reuse.reasons.map((r) => <li key={r}>{REUSE_REASON_TEXT[r]}</li>)}</ul></Alert></div>
       )}
 
       <div className="mb-4 grid gap-4 md:grid-cols-[auto_1fr]">

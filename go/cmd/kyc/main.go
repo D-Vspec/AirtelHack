@@ -77,6 +77,9 @@ type server struct {
 	policy    kyc.Policy
 	specimens string
 	resumeURL string
+	// accounts (accounts.go)
+	reusePolicy kyc.ReusePolicy
+	demoOTP     bool
 }
 
 func main() {
@@ -86,17 +89,22 @@ func main() {
 			if _, err := a.DB.Exec(ctx, schemaSQL); err != nil {
 				return fmt.Errorf("create tables: %w", err)
 			}
+			if _, err := a.DB.Exec(ctx, accountsSQL); err != nil {
+				return fmt.Errorf("create account tables: %w", err)
+			}
 			ref, err := time.Parse("2006-01-02", config.String("KYC_REFERENCE_DATE", "2026-07-15"))
 			if err != nil {
 				return fmt.Errorf("KYC_REFERENCE_DATE: %w", err)
 			}
 			s := &server{
 				a: a, st: store{a.DB},
-				reg:       regClient{base: config.String("REGISTRY_URL", "http://registry:8081"), http: &http.Client{Timeout: 5 * time.Second}},
-				ocr:       kyc.Tesseract{},
-				policy:    kyc.DefaultPolicy(ref),
-				specimens: config.String("KYC_SPECIMEN_DIR", "/data/kyc_documents"),
-				resumeURL: config.String("KYC_RESUME_BASE_URL", "http://localhost:3000/kyc/resume/"),
+				reg:         regClient{base: config.String("REGISTRY_URL", "http://registry:8081"), http: &http.Client{Timeout: 5 * time.Second}},
+				ocr:         kyc.Tesseract{},
+				policy:      kyc.DefaultPolicy(ref),
+				specimens:   config.String("KYC_SPECIMEN_DIR", "/data/kyc_documents"),
+				resumeURL:   config.String("KYC_RESUME_BASE_URL", "http://localhost:3000/kyc/resume/"),
+				reusePolicy: kyc.ReusePolicy{MaxAgeDays: config.Int("KYC_REUSE_MAX_AGE_DAYS", 365)},
+				demoOTP:     config.String("KYC_DEMO_OTP", "false") == "true",
 			}
 			if err := outbox.Init(ctx, a.DB); err != nil {
 				return err
@@ -133,6 +141,7 @@ func (s *server) routes() {
 	m.HandleFunc("POST /reviews/{id}/decision", s.decide)
 	m.HandleFunc("POST /applications/{leadId}/resume-link", s.resumeLink)
 	m.HandleFunc("GET /resume/{token}", s.resume)
+	s.accountRoutes()
 }
 
 func fail(w http.ResponseWriter, status int, code, msg string) {
