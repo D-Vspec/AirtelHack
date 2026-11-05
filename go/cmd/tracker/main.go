@@ -122,6 +122,9 @@ func main() {
 				return err
 			}
 			s := &server{a: a, rulesURL: config.String("RULES_URL", "http://rules:8082")}
+			if err := s.reopenPassedKyc(ctx); err != nil {
+				return err
+			}
 			a.Mux.HandleFunc("GET /orders", s.list)
 			a.Mux.HandleFunc("GET /orders/{id}", s.get)
 			a.Mux.HandleFunc("GET /orders/{id}/timeline", s.timeline)
@@ -229,8 +232,36 @@ func (s *server) onKyc(ctx context.Context, tx pgx.Tx, leadID, outcome, corr str
 	if outcome == "passed" && (o.Status == orders.KycPending || o.Status == orders.QuoteAccepted) {
 		return s.move(ctx, tx, o, orders.KycPassed, "", "")
 	}
+	if outcome == "passed" && o.Status == orders.Failed && o.StatusReason == orders.ReasonKycRejected {
+		// rejected earlier, passed now with new documents: the order carries on
+		return s.move(ctx, tx, o, orders.KycPassed, "kyc_passed_after_resubmission", "")
+	}
 	if outcome == "rejected" && !orders.Final(o.Status) {
 		return s.move(ctx, tx, o, orders.Failed, orders.ReasonKycRejected, "")
+	}
+	return nil
+}
+
+// reopenPassedKyc repairs orders left failed by a KYC rejection although KYC has passed since
+// (before CanMoveFrom, that later kyc.passed was ignored). Runs once at startup; idempotent.
+func (s *server) reopenPassedKyc(ctx context.Context) error {
+	rows, err := s.a.DB.Query(ctx, `SELECT o.lead_id FROM orders o JOIN kyc_status k ON k.lead_id = o.lead_id
+		WHERE o.status = $1 AND o.status_reason = $2 AND k.status = 'passed'`, orders.Failed, orders.ReasonKycRejected)
+	if err != nil {
+		return err
+	}
+	leads, err := pgx.CollectRows(rows, pgx.RowTo[string])
+	if err != nil {
+		return err
+	}
+	for _, lead := range leads {
+		err := pgx.BeginFunc(ctx, s.a.DB, func(tx pgx.Tx) error { return s.onKyc(ctx, tx, lead, "passed", events.NewID()) })
+		if err != nil {
+			return err
+		}
+	}
+	if len(leads) > 0 {
+		s.a.Log.Info("reopened orders whose KYC passed after a rejection", "count", len(leads))
 	}
 	return nil
 }
@@ -239,7 +270,7 @@ var errInvalidTransition = errors.New("invalid transition")
 
 // move applies one transition: order row, timeline entry and events in the caller's transaction.
 func (s *server) move(ctx context.Context, tx pgx.Tx, o *Order, to, reason, note string) error {
-	if !orders.CanMove(o.Status, to) {
+	if !orders.CanMoveFrom(o.Status, o.StatusReason, to) {
 		return fmt.Errorf("%w: %s -> %s", errInvalidTransition, o.Status, to)
 	}
 	from, now := o.Status, time.Now().UTC()

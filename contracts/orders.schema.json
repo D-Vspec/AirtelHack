@@ -6,7 +6,7 @@
   "$defs": {
     "OrderStatus": {"enum": ["quote_accepted", "kyc_pending", "kyc_passed", "install_scheduled", "installing", "activated", "delayed", "failed"]},
     "Transitions": {
-      "description": "Allowed moves (go/pkg/orders.Allowed). activated and failed are final.",
+      "description": "Allowed moves (go/pkg/orders.Allowed). activated and failed are final, except that an order failed with reason kyc_rejected reopens at kyc_passed when KYC later passes (orders.CanMoveFrom).",
       "const": {
         "quote_accepted": ["kyc_pending", "kyc_passed", "failed"],
         "kyc_pending": ["kyc_passed", "failed"],

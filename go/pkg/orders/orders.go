@@ -43,6 +43,13 @@ var Allowed = map[string][]string{
 // CanMove reports whether from -> to is a legal transition.
 func CanMove(from, to string) bool { return slices.Contains(Allowed[from], to) }
 
+// CanMoveFrom is CanMove plus the one way out of failed: an order that failed only because KYC
+// rejected it reopens at kyc_passed when the owner later passes KYC (for example after uploading
+// the right documents, or a restored GST registration). Every other failure stays final.
+func CanMoveFrom(from, reason, to string) bool {
+	return CanMove(from, to) || (from == Failed && reason == ReasonKycRejected && to == KycPassed)
+}
+
 // Valid reports whether s is a known status.
 func Valid(s string) bool { return s == Activated || s == Failed || Allowed[s] != nil }
 

@@ -32,6 +32,25 @@ func TestTransitions(t *testing.T) {
 	}
 }
 
+func TestOnlyAKycRejectionReopens(t *testing.T) {
+	cases := []struct {
+		from, reason, to string
+		want             bool
+	}{
+		{Failed, ReasonKycRejected, KycPassed, true},   // re-submitted documents passed
+		{Failed, ReasonKycRejected, Installing, false}, // only back to kyc_passed
+		{Failed, "install_failed", KycPassed, false},   // other failures stay final
+		{Failed, "", KycPassed, false},
+		{KycPending, "", KycPassed, true}, // ordinary moves unchanged
+		{Activated, ReasonKycRejected, KycPassed, false},
+	}
+	for _, c := range cases {
+		if got := CanMoveFrom(c.from, c.reason, c.to); got != c.want {
+			t.Errorf("%s (%s) -> %s: got %v", c.from, c.reason, c.to, got)
+		}
+	}
+}
+
 func TestExpectedActivationUsesSlowestProduct(t *testing.T) {
 	start := time.Date(2026, 7, 15, 10, 0, 0, 0, time.UTC)
 	if got := ExpectedActivation(start, 21); got != "2026-08-05" {
