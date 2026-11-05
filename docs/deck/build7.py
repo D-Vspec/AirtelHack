@@ -51,7 +51,7 @@ s.notes_slide.notes_text_frame.text = (
     "conversations and all 12 KYC test applicants come out as expected.")
 
 # ---- 6. Architecture (from build.py slide 8) --------------------------------------------------------------
-exec(compile(section(8, 9).replace("owner OTP + partner ReBAC next", "owner OTP sign-in live; partner ReBAC next").replace("owner OTP login with partner access rules is next", "owners sign in with an OTP; partner access rules are next"), "build.py", "exec"))
+exec(compile(section(8, 9), "build.py", "exec"))
 
 # ---- 7. Rollout, KPIs, risks and asks ------------------------------------------------------------------------
 s = new_content_slide()

@@ -19,7 +19,7 @@ flowchart LR
     RUL["rules :8082<br/>eligibility, bundles"]
     QUO["quote :8083<br/>pricing, add-ons, accept"]
     REG["registry :8081<br/>GSTIN / Udyam lookup,<br/>checksum, OCR correction"]
-    KYC["kyc :8084<br/>consent, OCR pipeline (tesseract),<br/>review queue, resume links"]
+    KYC["kyc :8084<br/>consent, OCR pipeline (tesseract),<br/>review queue, resume links,<br/>owner OTP sign-in + KYC reuse"]
     TRK["tracker :8085<br/>order state machine, timeline"]
     NOT["notify :8086<br/>WhatsApp / SMS / email (mock)"]
     SCO["scoring :8087<br/>XGBoost in Go, partner tasks"]
@@ -41,14 +41,16 @@ flowchart LR
   K -- "order.*, notification.requested, profile" --> NOT
   K -- "lead.created, profile, lead.unclosed" --> SCO
 
-  PG[("Postgres 16<br/>one schema + one role per service<br/>outbox + processed_events per service")]
+  PG[("Postgres 16<br/>one schema + one role per service<br/>outbox + processed_events per service<br/>KYC images: deleted at decision or 30 days")]
   REG & RUL & QUO & KYC & TRK & NOT & SCO --- PG
 ```
 
 Key properties:
 - **Decisions are code:** eligibility, pricing and KYC verdicts are deterministic Go. The LLM only converses, extracts a profile, and phrases replies the guard has checked.
 - **No lost events:** writes and their events commit together (transactional outbox). Consumers are idempotent (`processed_events`), retry with backoff, then dead-letter. Proven by `make integration` and `make drills`.
+- **Owner accounts:** OTP sign-in, order history and KYC reuse live in the kyc service; a reused verification is re-checked against the registry and expires after 365 days.
 - **Isolation:** each service owns its schema through its own Postgres role; services talk through Kafka or HTTP only.
+- **Graceful degradation:** if rules or quote is down, the advisor keeps everything the owner said, apologises that pricing is briefly unavailable (no product or price is guessed), and quotes when they try again.
 - **Observability:** `/metrics` on every service, JSON logs with request and correlation IDs, and an admin status page.
 
 ## 2. National-scale topology
@@ -76,7 +78,7 @@ flowchart TB
 
   subgraph Data["Data plane"]
     KAF[("Kafka, multi-AZ per region<br/>partitioned by leadId (ordering per owner)<br/>MirrorMaker to the analytics region")]
-    DB[("CockroachDB or multi-region Postgres<br/>rows homed by owner region (data residency)<br/>one schema + role per service")]
+    DB[("Postgres 16 per region, primary + replicas<br/>rows homed by owner region (data residency)<br/>one schema + role per service")]
     OBJ[("Object storage, encrypted<br/>KYC images, 30-day lifecycle")]
   end
   SVC --> KAF
@@ -95,7 +97,7 @@ flowchart TB
 ```
 
 What changes from the demo:
-- **Data:** CockroachDB or multi-region Postgres, rows homed in the owner's region.
+- **Data:** Postgres 16 in each region (primary plus read replicas); each owner's rows live in their home region. Same engine as the demo, so no migration.
 - **Kafka:** partitioned by `leadId`, so one owner's events stay in order while partitions scale out.
 - **Gateways:** per region, with WAF and back-office SSO.
 - **KYC:** OCR moves to a worker pool, and images move to encrypted object storage with lifecycle deletion.

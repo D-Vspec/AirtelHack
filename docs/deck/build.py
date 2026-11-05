@@ -149,6 +149,71 @@ def picture(slide, path, x, y, w=None, h=None, border=True):
     return pic
 
 
+def down_arrow(slide, x, y, w=0.22, h=0.17):
+    a = slide.shapes.add_shape(MSO_SHAPE.DOWN_ARROW, Inches(x), Inches(y), Inches(w), Inches(h))
+    a.fill.solid()
+    a.fill.fore_color.rgb = MUTED
+    a.line.fill.background()
+    a.shadow.inherit = False
+    return a
+
+
+def simple_architecture(slide, x0, y0):
+    """Slide-sized architecture: clients -> gateway -> five service groups -> Kafka + Postgres.
+    The dashed red frame is the boundary where every decision is deterministic code."""
+    from pptx.enum.dml import MSO_LINE_DASH_STYLE
+    W = 5.9
+    # clients
+    clients = [("Owner · web", "Next.js, 10 languages"), ("Owner · mobile", "Expo React Native"), ("Back office", "sales & partners")]
+    cw = (W - 0.2) / 3
+    for i, (h, d) in enumerate(clients):
+        x = x0 + i * (cw + 0.1)
+        box(slide, x, y0, cw, 0.48, fill=PANEL)
+        text(slide, x, y0 + 0.04, cw, 0.22, h, size=10, bold=True, align=PP_ALIGN.CENTER)
+        text(slide, x, y0 + 0.25, cw, 0.2, d, size=8, color=GREY, align=PP_ALIGN.CENTER)
+    down_arrow(slide, x0 + W / 2 - 0.11, y0 + 0.52)
+    # gateway
+    gy = y0 + 0.72
+    box(slide, x0, gy, W, 0.32, fill=INK)
+    text(slide, x0, gy + 0.03, W, 0.26, [[("Gateway", {"bold": True}), ("  ·  routing, rate limits, sign-in tokens, request IDs", {})]], size=9.5, color=WHITE, align=PP_ALIGN.CENTER, anchor=MSO_ANCHOR.MIDDLE)
+    down_arrow(slide, x0 + W / 2 - 0.11, gy + 0.36)
+    # services
+    sy = gy + 0.58
+    sw, gap = 1.08, 0.125
+    groups = [("AI advisor", "LLM: chats in the owner's language", TINT),
+              ("Rules + Quote", "eligibility, bundles, prices", PANEL),
+              ("KYC + Registry", "OCR, GSTIN/Udyam, consent, sign-in", PANEL),
+              ("Tracker + Notify", "order steps, WhatsApp / SMS", PANEL),
+              ("Scoring", "lead score, partner handoff", PANEL)]
+    for i, (h, d, fill) in enumerate(groups):
+        x = x0 + i * (sw + gap)
+        box(slide, x, sy, sw, 1.0, fill=fill, line=RED if i == 0 else None)
+        text(slide, x + 0.05, sy + 0.06, sw - 0.1, 0.4, h, size=9.5, bold=True, align=PP_ALIGN.CENTER, anchor=MSO_ANCHOR.MIDDLE)
+        text(slide, x + 0.05, sy + 0.5, sw - 0.1, 0.5, d, size=8, color=GREY, align=PP_ALIGN.CENTER)
+    # deterministic boundary around groups 2-5
+    fx = x0 + sw + gap / 2 - 0.02
+    frame = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(fx), Inches(sy - 0.08), Inches(x0 + W - fx + 0.04), Inches(1.16))
+    frame.adjustments[0] = 0.06
+    frame.fill.background()
+    frame.line.color.rgb = RED
+    frame.line.width = Pt(1.25)
+    frame.line.dash_style = MSO_LINE_DASH_STYLE.DASH
+    frame.shadow.inherit = False
+    text(slide, x0, sy + 1.1, sw + 0.1, 0.32, "talks only; never decides", size=8, bold=True, color=RED, align=PP_ALIGN.CENTER)
+    text(slide, fx, sy + 1.1, x0 + W - fx, 0.32, "Deterministic Go: decides eligibility, price and KYC", size=8, bold=True, color=RED, align=PP_ALIGN.CENTER)
+    # data
+    dy = sy + 1.45
+    data = [("Kafka", "every event saved with its write (outbox); none lost"), ("Postgres 16", "one schema + role per service; KYC images auto-deleted")]
+    dw = (W - 0.1) / 2
+    for i, (h, d) in enumerate(data):
+        x = x0 + i * (dw + 0.1)
+        c = slide.shapes.add_shape(MSO_SHAPE.CAN, Inches(x), Inches(dy), Inches(dw), Inches(0.5))
+        c.fill.solid(); c.fill.fore_color.rgb = PANEL
+        c.line.color.rgb = MUTED; c.line.width = Pt(0.75)
+        c.shadow.inherit = False
+        text(slide, x + 0.1, dy + 0.13, dw - 0.2, 0.35, [[(h + "  ", {"bold": True, "size": 9.5}), (d, {})]], size=8, color=INK, align=PP_ALIGN.CENTER, anchor=MSO_ANCHOR.MIDDLE)
+
+
 def style_chart(chart, colors):
     chart.has_legend = False
     chart.font.name = FONT
@@ -375,12 +440,12 @@ s.notes_slide.notes_text_frame.text = (
 
 # ---- 8. Architecture ------------------------------------------------------------------------------------
 s = new_content_slide()
-title(s, "Built like a production system, sized for a national rollout", "Demo topology (docker compose) · full diagram: docs/architecture.md")
-picture(s, DOCS / "architecture-demo.png", 0.55, 1.58, w=5.9)
+title(s, "Built like a production system, sized for a national rollout", "Simplified view · full diagrams in the repo: docs/architecture.md")
+simple_architecture(s, 0.55, 1.55)
 arch = [("Decisions are code", "eligibility, pricing and KYC verdicts are deterministic Go; the LLM only talks and explains"),
         ("Nothing is lost", "transactional outbox + idempotent consumers + dead-letter topic; Kafka or a service down: no event lost (drills pass)"),
-        ("Private by design", "one schema + DB role per service; masked IDs; chat transcripts back-office only; owner OTP + partner ReBAC next"),
-        ("National scale", "regional gateways, Kafka partitioned by lead, multi-region DB with data residency")]
+        ("Private by design", "own schema + DB role per service; masked IDs; owner OTP sign-in; transcripts back-office only"),
+        ("National scale", "regional gateways, Kafka partitioned by lead, Postgres per region (data residency)")]
 for i, (h, d) in enumerate(arch):
     y = 1.6 + i * 0.86
     badge(s, 6.7, y + 0.02, str(i + 1), d=0.32, size=10)
@@ -390,7 +455,7 @@ s.notes_slide.notes_text_frame.text = (
     "Under the hood it's built like a production system. Web and mobile talk to one gateway; eight services own their own data; events "
     "flow over Kafka with a transactional outbox, so in our failure drills, stopping Kafka, a service or the database lost nothing. "
     "Eligibility, pricing and KYC are deterministic code: the language model never decides what is sold. Each service has its own database role, "
-    "chat transcripts are back-office only, and owner OTP login with partner access rules is next. The same design scales "
+    "chat transcripts are back-office only, and owners sign in with a one-time code; partner access rules are next. The same design scales "
     "nationally with regional gateways, partitioned Kafka and a multi-region database.")
 
 # ---- 9. Rollout + KPIs ----------------------------------------------------------------------------------
