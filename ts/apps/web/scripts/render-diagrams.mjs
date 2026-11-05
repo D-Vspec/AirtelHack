@@ -22,7 +22,7 @@ try {
     await page.addScriptTag({ content: mermaidJs });
     await page.evaluate(async (code) => {
       // eslint-disable-next-line no-undef
-      mermaid.initialize({ startOnLoad: false, theme: "default", flowchart: { htmlLabels: true, curve: "basis" }, securityLevel: "strict" });
+      mermaid.initialize({ startOnLoad: false, theme: "default", flowchart: { htmlLabels: true, curve: "basis", useMaxWidth: false }, themeVariables: { fontSize: "18px" }, securityLevel: "strict" });
       // eslint-disable-next-line no-undef
       const { svg } = await mermaid.render("g", code);
       document.getElementById("d").innerHTML = svg;

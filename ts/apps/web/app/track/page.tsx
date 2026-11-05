@@ -2,9 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { ORDER_STATUS_LABELS, type SentMessage, type Timeline } from "@udyam/shared";
-import { Alert, Button, Card, Shell, Spinner } from "@/components/ui";
+import { Alert, Button, Card, Pill, Shell, Skeleton, Spinner } from "@/components/ui";
+import { IconAlert, IconBolt, IconCamera, IconCheck, IconMessage, IconReceipt, IconShield, IconTruck, IconWifi } from "@/components/icons";
 import { api, errorText, useJourney } from "@/lib/journey";
 
+// one icon per happy-path stage (go/pkg/orders.HappyPath)
+const STAGE_ICONS = [IconReceipt, IconCamera, IconShield, IconTruck, IconBolt, IconWifi];
 
 export default function TrackPage() {
   const { j, ready, t } = useJourney();
@@ -46,50 +49,71 @@ export default function TrackPage() {
 
   const o = tl?.order;
   const STATUS_LABEL = ORDER_STATUS_LABELS[j.lang];
+  const live = o?.status === "activated";
   return (
     <Shell step={4} title={t("orderStatus")}>
-      {!loaded && <Spinner />}
+      {!loaded && (
+        <div className="grid gap-4 lg:grid-cols-[1fr_340px]">
+          <Card><Skeleton className="h-8 w-1/3" /><Skeleton className="mt-4 h-40" /></Card>
+          <Card><Skeleton className="h-48" /></Card>
+        </div>
+      )}
       {loaded && !o && <Alert>{t("noOrder")}</Alert>}
       {o && (
         <div className="grid gap-4 lg:grid-cols-[1fr_340px]">
           <div className="space-y-4">
-            <Card>
-              <p className="text-sm text-gray-600">#{o.id.replaceAll("-", "").slice(0, 8).toUpperCase()}</p>
-              <p data-testid="order-status" data-status={o.status} className="text-xl font-bold text-brand-900">{STATUS_LABEL[o.status] ?? o.status}</p>
-              {o.expectedActivationDate && o.status !== "activated" && <p className="text-gray-700">{t("expectedBy", { date: o.expectedActivationDate })}</p>}
+            <Card className="overflow-hidden p-0">
+              <div className={`px-5 py-5 ${live ? "bg-mint-600" : "bg-ink-900"} text-white`}>
+                <p className="text-xs tracking-widest text-white/70">#{o.id.replaceAll("-", "").slice(0, 8).toUpperCase()}</p>
+                <p data-testid="order-status" data-status={o.status} className="mt-1 flex items-center gap-2 text-2xl font-bold tracking-tight">
+                  {live ? <IconCheck size={26} /> : o.status === "delayed" ? <IconAlert size={24} /> : <IconTruck size={24} />}
+                  {STATUS_LABEL[o.status] ?? o.status}
+                </p>
+                {o.expectedActivationDate && !live && <p className="mt-1 text-white/80">{t("expectedBy", { date: o.expectedActivationDate })}</p>}
+              </div>
 
               {/* phones: vertical list; md+: horizontal steps */}
-              <ol className="mt-4 flex flex-col gap-3 md:flex-row md:gap-0">
-                {tl!.steps.map((s, i) => (
-                  <li key={s.status} className="flex items-center gap-3 md:flex-1 md:flex-col md:text-center">
-                    <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${
-                      s.state === "done" ? "bg-green-600 text-white" : s.state === "current" ? "bg-brand-600 text-white" : s.state === "blocked" ? "bg-amber-500 text-white" : "bg-gray-200 text-gray-500"}`}>
-                      {s.state === "done" ? "✓" : s.state === "blocked" ? "!" : i + 1}
-                    </span>
-                    <span className="text-sm md:mt-1">
-                      <span className={s.state === "upcoming" ? "text-gray-500" : "font-medium"}>{STATUS_LABEL[s.status]}</span>
-                      {s.at && <span className="block text-xs text-gray-500">{new Date(s.at).toLocaleString()}</span>}
-                    </span>
-                  </li>
-                ))}
+              <ol className="flex flex-col gap-0 px-5 py-5 md:flex-row">
+                {tl!.steps.map((s, i) => {
+                  const Ico = STAGE_ICONS[i] ?? IconCheck;
+                  const last = i === tl!.steps.length - 1;
+                  return (
+                    <li key={s.status} className="relative flex gap-3 pb-5 md:flex-1 md:flex-col md:items-center md:pb-0 md:text-center">
+                      {!last && <span className={`absolute top-10 left-[19px] h-[calc(100%-2.5rem)] w-0.5 md:top-[19px] md:left-[calc(50%+22px)] md:h-0.5 md:w-[calc(100%-44px)] ${s.state === "done" ? "bg-ink-900" : "bg-ink-200"}`} />}
+                      <span className={`relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
+                        s.state === "done" ? "bg-ink-900 text-white" : s.state === "current" ? "pulse-ring bg-brand-600 text-white" : s.state === "blocked" ? "bg-amber-500 text-white" : "bg-ink-100 text-ink-500"}`}>
+                        {s.state === "done" ? <IconCheck size={18} /> : s.state === "blocked" ? <IconAlert size={18} /> : <Ico size={18} />}
+                      </span>
+                      <span className="text-sm md:mt-2">
+                        <span className={s.state === "upcoming" ? "text-ink-500" : "font-semibold"}>{STATUS_LABEL[s.status]}</span>
+                        {s.at && <span className="block text-xs text-ink-500">{new Date(s.at).toLocaleString([], { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</span>}
+                      </span>
+                    </li>
+                  );
+                })}
               </ol>
             </Card>
 
             {o.status === "delayed" && o.fallbackOffered && (
-              <Card className="ring-2 ring-amber-400">
-                <h2 className="font-semibold">{t("fallbackTitle")}</h2>
-                <p className="text-gray-700">{t("fallbackBody")}</p>
-                <Button data-testid="fallback-accept" className="mt-3 w-full sm:w-auto" disabled={busy} onClick={acceptFallback}>{busy && <Spinner />}{t("fallbackAccept")}</Button>
+              <Card className="animate-rise bg-amber-50 ring-2 ring-amber-300">
+                <div className="flex items-start gap-3">
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-ink-900 text-white"><IconBolt size={22} /></span>
+                  <div>
+                    <h2 className="font-bold">{t("fallbackTitle")}</h2>
+                    <p className="text-ink-700">{t("fallbackBody")}</p>
+                  </div>
+                </div>
+                <Button data-testid="fallback-accept" className="mt-4 w-full sm:w-auto" disabled={busy} onClick={acceptFallback}>{busy ? <Spinner /> : <IconWifi size={18} />}{t("fallbackAccept")}</Button>
               </Card>
             )}
             {error && <Alert tone="error">{error}</Alert>}
 
             <Card>
-              <ul className="space-y-1 text-sm">
+              <ul className="divide-y divide-ink-100 text-sm">
                 {o.lines.map((l) => (
-                  <li key={l.productId} className="flex justify-between gap-2">
-                    <span>{l.productName}{l.quantity > 1 ? ` × ${l.quantity}` : ""}</span>
-                    <span className="text-gray-500">{l.installDays}d</span>
+                  <li key={l.productId} className="flex items-center justify-between gap-2 py-2">
+                    <span className="font-medium">{l.productName}{l.quantity > 1 ? ` × ${l.quantity}` : ""}</span>
+                    <Pill>{l.installDays}d</Pill>
                   </li>
                 ))}
               </ul>
@@ -97,16 +121,19 @@ export default function TrackPage() {
           </div>
 
           <aside>
-            <Card>
-              <h2 className="mb-2 font-semibold">{t("messagesSent")}</h2>
-              <ul className="space-y-2">
+            <Card className="overflow-hidden p-0">
+              <div className="flex items-center gap-2 bg-[#075e54] px-4 py-3 text-white">
+                <IconMessage size={18} /> <h2 className="font-semibold">{t("messagesSent")}</h2>
+              </div>
+              <ul className="max-h-[560px] space-y-2 overflow-y-auto bg-[#efeae2] p-3">
                 {msgs.map((m) => (
-                  <li key={m.id} className="rounded-xl bg-[#e7f8e9] p-3 text-sm">
-                    <span className="mb-1 block text-xs font-semibold uppercase text-green-800">{m.channel}</span>
+                  <li key={m.id} className="animate-rise ml-4 rounded-2xl rounded-tr-md bg-[#d9fdd3] p-3 text-sm text-ink-900 shadow-sm">
+                    <span className="mb-1 block text-[10px] font-bold tracking-wider text-[#075e54] uppercase">{m.channel}</span>
                     {m.body}
-                    <span className="mt-1 block text-right text-[11px] text-gray-500">{new Date(m.createdAt).toLocaleTimeString()}</span>
+                    <span className="mt-1 block text-right text-[11px] text-ink-500">{new Date(m.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} ✓✓</span>
                   </li>
                 ))}
+                {msgs.length === 0 && <li className="p-6 text-center text-sm text-ink-500">…</li>}
               </ul>
             </Card>
           </aside>

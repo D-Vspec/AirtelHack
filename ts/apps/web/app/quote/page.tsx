@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { inr, type Product, type Quote } from "@udyam/shared";
-import { ActionBar, Alert, Button, Card, Shell, Spinner } from "@/components/ui";
+import { ActionBar, Alert, Button, Card, Pill, Shell, Skeleton, Spinner, Toggle } from "@/components/ui";
+import { IconArrow, IconBack, IconCamera, IconChart, IconCheck, IconLock, IconMessage, IconTruck, IconWifi } from "@/components/icons";
 import { api, errorText, useJourney } from "@/lib/journey";
 
 // Add-ons worth offering on top of a bundle; only those the rules service says are eligible are shown.
@@ -63,48 +64,53 @@ export default function QuotePage() {
 
   return (
     <Shell step={1} title={t("stepQuote")}>
-      {!quote && !error && <Spinner />}
+      {!quote && !error && (
+        <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
+          <Card><div className="space-y-3"><Skeleton className="h-6 w-1/2" /><Skeleton className="h-14" /><Skeleton className="h-14" /><Skeleton className="h-14" /></div></Card>
+          <Card><Skeleton className="h-24" /></Card>
+        </div>
+      )}
       {error && <div className="mb-4"><Alert tone="error">{error}</Alert></div>}
       {quote && (
-        <div className="grid gap-4 lg:grid-cols-[1fr_300px]">
-          <Card>
-            <ul className="divide-y divide-gray-100">
+        <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
+          <Card className="p-3 sm:p-5">
+            <ul className="divide-y divide-ink-100">
               {quote.lines.map((l) => (
-                <li key={l.productId} className="flex flex-wrap items-start justify-between gap-2 py-3">
-                  <div className="min-w-0">
-                    <p className="font-medium">{l.productName}{l.quantity > 1 ? ` × ${l.quantity}` : ""}</p>
-                    <p className="text-sm text-gray-600">
+                <li key={l.productId} className="flex items-start gap-3 py-3">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-700">{lineIcon(l.productId)}</span>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold">{l.productName}{l.quantity > 1 ? <span className="text-ink-500"> × {l.quantity}</span> : null}</p>
+                    <p className="text-sm text-ink-500">
                       {inr(l.unitPriceInr)} / {l.unit} · {l.contractMonths} mo{l.oneTimeInr ? ` · ${inr(l.oneTimeInr)} ${t("oneTime")}` : ""}
                     </p>
-                    {l.addedFor && <p className="text-xs text-amber-800">{l.note ?? `Needed for ${l.addedFor}`}</p>}
+                    {l.addedFor && <p className="mt-1"><Pill tone="amber">{l.note ?? `Needed for ${l.addedFor}`}</Pill></p>}
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1">
                     <span className="tabular-nums font-semibold">{inr(l.monthlyInr)}</span>
                     {!accepted && (
-                      <button aria-label={`remove ${l.productName}`} disabled={!!busy} onClick={() => toggle(l.productId, false)} className="min-h-10 rounded-lg px-2 text-sm text-gray-500 hover:bg-red-50 hover:text-red-700">✕</button>
+                      <button aria-label={`remove ${l.productName}`} disabled={!!busy} onClick={() => toggle(l.productId, false)}
+                        className="ml-1 flex h-9 w-9 items-center justify-center rounded-xl text-ink-500 hover:bg-brand-50 hover:text-brand-700">✕</button>
                     )}
                   </div>
                 </li>
               ))}
             </ul>
             {quote.notes.length > 0 && (
-              <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-gray-700">{quote.notes.map((n) => <li key={n}>{n}</li>)}</ul>
+              <ul className="mt-2 space-y-1 rounded-2xl bg-ink-50 p-3 text-sm text-ink-700">{quote.notes.map((n) => <li key={n}>• {n}</li>)}</ul>
             )}
 
             {!accepted && addOns.some((p) => !inQuote.has(p.id)) && (
               <>
-                <h2 className="mt-6 mb-2 font-semibold">{t("addOns")}</h2>
-                <ul className="grid gap-2 sm:grid-cols-2">
+                <h2 className="mt-6 mb-2 font-bold">{t("addOns")}</h2>
+                <ul className="grid gap-2 md:grid-cols-2 lg:grid-cols-1 2xl:grid-cols-2">
                   {addOns.filter((p) => !inQuote.has(p.id)).map((p) => (
-                    <li key={p.id}>
-                      <label className="flex min-h-14 cursor-pointer items-center gap-3 rounded-xl p-3 ring-1 ring-gray-200 hover:ring-brand-600">
-                        <input type="checkbox" className="h-5 w-5 accent-brand-600" disabled={!!busy} checked={false} onChange={() => toggle(p.id, true)} />
-                        <span className="min-w-0">
-                          <span className="block font-medium">{p.name}</span>
-                          <span className="block text-xs text-gray-600">{inr(p.priceMinInr)}–{inr(p.priceMaxInr)} / {p.unit}</span>
-                        </span>
-                        {busy === p.id && <Spinner />}
-                      </label>
+                    <li key={p.id} className="flex min-h-16 items-center gap-3 rounded-2xl bg-ink-50 p-3 ring-1 ring-ink-100">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-ink-700 ring-1 ring-ink-200">{lineIcon(p.id)}</span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-[15px] font-semibold leading-tight">{p.name}</span>
+                        <span className="block text-xs text-ink-500">{inr(p.priceMinInr)}–{inr(p.priceMaxInr)} / {p.unit}</span>
+                      </span>
+                      {busy === p.id ? <Spinner /> : <Toggle checked={false} disabled={!!busy} onChange={() => toggle(p.id, true)} label={p.name} />}
                     </li>
                   ))}
                 </ul>
@@ -113,28 +119,40 @@ export default function QuotePage() {
           </Card>
 
           <aside>
-            <Card className="lg:sticky lg:top-24">
-              <p className="text-3xl font-bold text-brand-900">{inr(quote.monthlyTotalInr)}</p>
-              <p className="text-gray-600">{t("perMonth")}</p>
-              <dl className="mt-3 space-y-1 text-sm">
-                <div className="flex justify-between"><dt>{t("oneTime")}</dt><dd className="tabular-nums">{inr(quote.oneTimeTotalInr)}</dd></div>
-                <div className="flex justify-between"><dt>{t("totalContract", { months: quote.contractMonths })}</dt><dd className="tabular-nums">{inr(quote.totalContractValueInr)}</dd></div>
+            <Card className="overflow-hidden p-0 lg:sticky lg:top-24">
+              <div className="bg-ink-900 px-5 py-5 text-white">
+                <p className="text-sm text-white/70">{t("perMonth")}</p>
+                <p key={quote.monthlyTotalInr} className="animate-rise text-4xl font-bold tracking-tight">{inr(quote.monthlyTotalInr)}</p>
+              </div>
+              <dl className="space-y-2 px-5 py-4 text-sm">
+                <div className="flex justify-between"><dt className="text-ink-500">{t("oneTime")}</dt><dd className="tabular-nums font-semibold">{inr(quote.oneTimeTotalInr)}</dd></div>
+                <div className="flex justify-between"><dt className="text-ink-500">{t("totalContract", { months: quote.contractMonths })}</dt><dd className="tabular-nums font-semibold">{inr(quote.totalContractValueInr)}</dd></div>
               </dl>
-              <p className="mt-3 text-sm text-gray-700">{t("installIn", { days: quote.expectedInstallDays })}</p>
+              <p className="flex items-center gap-2 border-t border-ink-100 px-5 py-3 text-sm text-ink-700"><IconTruck size={16} /> {t("installIn", { days: quote.expectedInstallDays })}</p>
             </Card>
           </aside>
         </div>
       )}
       {quote && (
         <ActionBar>
-          <Button variant="secondary" onClick={() => router.push("/chat")}>← {t("stepChat")}</Button>
+          <Button variant="secondary" onClick={() => router.push("/chat")}><IconBack size={18} /> {t("stepChat")}</Button>
           {accepted ? (
-            <Button data-testid="accept" onClick={() => router.push("/consent")}>{t("stepConsent")} →</Button>
+            <Button data-testid="accept" onClick={() => router.push("/consent")}>{t("stepConsent")} <IconArrow size={18} /></Button>
           ) : (
-            <Button data-testid="accept" disabled={!!busy} onClick={accept}>{busy === "accept" ? <Spinner /> : null}{t("accept")}</Button>
+            <Button data-testid="accept" disabled={!!busy} onClick={accept}>{busy === "accept" ? <Spinner /> : <IconCheck size={18} />}{t("accept")}</Button>
           )}
         </ActionBar>
       )}
     </Shell>
   );
+}
+
+/** Category icon by catalogue product (P01-P11 connectivity, P12-P15 communication, P16-P19 cloud, P20-P22 security, P23-P25 IoT). */
+function lineIcon(id: string) {
+  const n = Number(id.slice(1));
+  if (n <= 11) return <IconWifi size={18} />;
+  if (n <= 15) return <IconMessage size={18} />;
+  if (n <= 19) return <IconChart size={18} />;
+  if (n <= 22) return <IconLock size={18} />;
+  return <IconCamera size={18} />;
 }

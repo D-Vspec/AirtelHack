@@ -1,25 +1,34 @@
-# 3-minute demo script and shot list
+# 3-minute demo video: script and shot list
 
-**Setup before recording:**
-- Start the stack: `make up seed`.
-- Put the LLM key in `.env`.
-- Start the web app: `make web`. Open http://localhost:3000 in a phone-sized window (390×844, or a real phone on the LAN), and http://localhost:3000/admin in a second window (token `demo-admin-token`).
-- Run `make scenarios` once beforehand so the back office has data.
-- Keep the simulator at its default (`SIM_STEP_SECONDS=8`), so activation takes about 30 s on camera.
+About 420 words of voice-over: 2:50 at a calm pace, leaving 10 s of slack. Record the screen at 1080p. Show the phone journey in a 390×844 browser window (or a real phone) next to the desktop back office.
 
-| Time | Shot | On screen | Voice-over (about 25 words per 10 s) |
-|---|---|---|---|
-| 0:00–0:15 | Title, then the funnel from docs/business-case.md slide 1 | 7.4% activation; 1,485 drops fixable by digital | "5,000 small-business leads, 368 activations. A third of the losses are friction: no time for a visit, slow or confusing quotes, paperwork. We replace all of that with one phone session." |
-| 0:15–0:25 | Phone: home screen, tap **தமிழ்**, then demo owner "Dental clinic, Chennai (Tamil)" | Language grid, Noto Tamil font | "An owner picks their language. Ten Indian languages, fonts self-hosted for low-end phones." |
-| 0:25–0:55 | Phone: chat. Send the prefilled Tamil message; the advisor answers in Tamil with the bundle and price | Tamil reply, ₹3,933 a month, quote card | "The AI advisor asks only what it needs and recommends a bundle. But it never invents a product or a price: eligibility and pricing are deterministic code, and a guard rejects any number the quote service didn't return." |
-| 0:55–1:10 | Phone: **See my quote**, toggle "Backup 4G/5G Failover" on, then **Accept** | Line items, total updates, accept | "Transparent quote: monthly, one-time and contract total, add-ons with dependencies enforced. One tap to accept." |
-| 1:10–1:20 | Phone: consent screen, **I agree** | Three purposes | "Consent first, per purpose, under the DPDP Act. No upload without it, and the owner can withdraw and delete at any time." |
-| 1:20–1:45 | Phone: KYC. Take a photo of a blurred certificate (K04 image): instant "too blurry". Then **Use sample documents (K03)**, **Check my documents**, "All documents verified" | Instant finding, then the pass banner | "Smart KYC: blur and skew are caught on upload. OCR reads the certificates, GSTIN and Udyam numbers are checked against the registries, and names, address, bill age and ID validity are cross-checked. All twelve specimen applicants come out as expected." |
-| 1:45–2:10 | Phone: **Track order**. Steps tick to Live; WhatsApp messages in Tamil appear | Timeline, ETA, messages | "The tracker replaces status-chasing calls: every milestone goes out on WhatsApp in the owner's language. Events flow over Kafka with an outbox, so even if Kafka or a service goes down, nothing is lost." |
-| 2:10–2:30 | Desktop admin: **KYC review queue**, open the K07 case (name mismatch), **Approve** | Findings with reviewer detail | "Ambiguous cases, like a different name on one certificate, go to a human. Never a silent rejection." |
-| 2:30–2:45 | Desktop admin: **Leads by score**, then **Partner handoff** | Ranked list with reasons; handoff summary | "Field sales and partners get warm leads: ranked by a propensity model, 2.4 times better than random at finding buyers, with the advisor's summary when it can't close." |
-| 2:45–3:00 | Terminal: `make scenarios` ending "33 passed"; then the architecture diagram | Scenario output, docs/architecture-demo.png | "33 user-story scenarios pass against the live stack. Professional offices first, then multi-site and manufacturers with field sales. Thank you." |
+**Before recording**
+- Start everything: `docker compose up -d`, then `cd ts/apps/web && npx next start -p 3000`.
+- Check the LLM key works: `make smoke`, then send one chat message.
+- Run `make scenarios` once. The back office then has leads, a review and partner tasks.
+- Phone window: http://localhost:3000. Desktop window: http://localhost:3000/admin (token `demo-admin-token`).
+- Have `docs/Udyam_Digital_SYNC_Submission.pptx` open on slide 2, and a terminal open in the repo.
 
-**Fallback shots if the LLM is slow on the day:**
-- Use the desktop demo owner "Physio clinic where fibre is not feasible". It shows the delay, the 5G offer and the activation.
-- Or replay `docs/screens/phone-*.png`.
+| Time | Shot (what is on screen) | Voice-over |
+|---|---|---|
+| 0:00–0:15 | Deck slide 2: the funnel chart and "1,485 drops (32%)" | "Five thousand small-business leads, three hundred and sixty-eight activations. A third of the losses are pure friction: no time for a sales visit, quotes that take days, paperwork. Udyam Digital replaces all of it with one phone session." |
+| 0:15–0:25 | Phone: home screen. Tap **தமிழ்**, then the demo owner **Dental clinic, Chennai (Tamil)** | "An owner picks their language. Ten Indian languages, with fonts built in so it works on low-end phones." |
+| 0:25–0:55 | Phone: chat. Press send on the prefilled Tamil message. The advisor answers in Tamil and the quote card appears with ₹3,933 | "Our AI advisor asks only what it needs and recommends a bundle in the owner's own language. The important part: the AI never invents a product or a price. Eligibility and pricing are deterministic rules, and a guard rejects any number the quote service didn't produce." |
+| 0:55–1:10 | Phone: **See my quote**. Switch on **Backup 4G/5G Failover**; the total updates. Tap **Accept** | "One monthly price, the one-time charge separately, and add-ons with a single switch. Dependencies are enforced, so you can't buy CCTV without connectivity." |
+| 1:10–1:20 | Phone: consent screen, then **I agree** | "Consent comes first, per purpose, under the DPDP Act. Nothing can be uploaded without it, and the owner can withdraw and delete everything in one tap." |
+| 1:20–1:50 | Phone: KYC. Upload `data/kyc_documents/K04_gst_certificate.png`: "too blurry" appears instantly. Then **Use sample documents (K03)** → **Check my documents** → the progress ring fills and "All documents verified" shows | "Smart KYC catches a blurred or tilted photo the moment it is taken. OCR reads the certificates. GSTIN and Udyam numbers are checked against the registries, and then names, address, bill age and ID validity are cross-checked. All twelve test applicants, including the planted problems, come out as expected." |
+| 1:50–2:15 | Phone: **Track order**. The stepper ticks through to **Live**; WhatsApp messages in Tamil appear on the right | "Instead of calling support three times, the owner gets a WhatsApp update at every milestone, in their language. If fibre isn't feasible at the address, the system offers 5G AirFiber instead of losing the order." |
+| 2:15–2:30 | Desktop back office: **KYC review queue**. Open the K07 case (name mismatch) and click **Approve** | "Ambiguous cases, like a different name on one certificate, go to a human reviewer. We never silently reject a customer." |
+| 2:30–2:45 | Desktop: **Leads by score**, then **Partner handoff** | "Field sales and partners get warm leads, ranked by a propensity model that finds two point four times more buyers than random calling, with the advisor's summary when it couldn't close." |
+| 2:45–3:00 | Terminal: `make scenarios` ending in "33 passed, 0 failed". Then deck slide 8, the architecture | "Thirty-three user-story scenarios pass against the live system, and in our failure drills no event was lost. We start with professional offices, then multi-site businesses and manufacturers. Thank you." |
+
+**If something goes wrong on the day**
+- **The LLM is slow:** cut from the sent message straight to the quote card (keep the recording running and trim it later). Or use the desktop demo owner "Physio clinic where fibre is not feasible", which shows the delay, the 5G offer and the activation.
+- **No live system:** narrate over `docs/screens/phone-01` … `phone-07` and `desktop-06-fallback-offer.png`.
+
+**Upload checklist** (from the case):
+- Demo video, 3 minutes maximum.
+- Code repository.
+- Architecture diagram: `docs/architecture-demo.png` plus `docs/architecture.md`.
+- Business case, 10 slides or fewer: `docs/Udyam_Digital_SYNC_Submission.pptx`.
+- 1-page privacy and security note: `docs/privacy-security-note.md`.

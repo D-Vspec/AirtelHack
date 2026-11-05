@@ -1,11 +1,25 @@
 @import "tailwindcss";
 
+/* Design tokens. Brand: telecom red on ink, warm neutrals; matches the submission deck. */
 @theme {
-  --color-brand-50: #eef4ff;
-  --color-brand-100: #dbe7ff;
-  --color-brand-600: #1f5bd8;
-  --color-brand-700: #1748b0;
-  --color-brand-900: #0f3d91;
+  --color-brand-50: #fff3f3;
+  --color-brand-100: #ffe1e1;
+  --color-brand-200: #ffc2c2;
+  --color-brand-500: #f23030;
+  --color-brand-600: #e40000;
+  --color-brand-700: #b80000;
+  --color-brand-900: #6e0000;
+  --color-ink-50: #f6f6f8;
+  --color-ink-100: #ececf0;
+  --color-ink-200: #dcdce3;
+  --color-ink-500: #6b6b76;
+  --color-ink-700: #3a3a42;
+  --color-ink-900: #16161a;
+  --color-mint-50: #ecfdf3;
+  --color-mint-600: #16a34a;
+  --radius-card: 1.25rem;
+  --shadow-card: 0 1px 2px rgb(22 22 26 / 0.04), 0 8px 24px -12px rgb(22 22 26 / 0.12);
+  --shadow-lift: 0 2px 4px rgb(22 22 26 / 0.05), 0 16px 32px -14px rgb(228 0 0 / 0.28);
   --font-sans: var(--font-latin), var(--font-deva), var(--font-beng), var(--font-taml), var(--font-telu), var(--font-gujr),
     var(--font-knda), var(--font-mlym), var(--font-guru), system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
 }
@@ -15,14 +29,98 @@ html {
 }
 
 body {
-  background: #f5f7fb;
-  color: #111827;
+  background: #f7f7f9;
+  color: var(--color-ink-900);
   font-family: var(--font-sans);
+  font-size: 16.5px;
   /* Indic scripts need more line height than Latin to keep matras readable */
   line-height: 1.6;
 }
 
-/* Low-end phones: no smooth-scroll or heavy motion unless the user is fine with it */
+/* Soft brand wash behind the journey screens */
+.bg-journey {
+  background:
+    radial-gradient(1200px 400px at 100% -10%, rgb(228 0 0 / 0.07), transparent 60%),
+    radial-gradient(900px 360px at -10% 0%, rgb(22 22 26 / 0.05), transparent 60%),
+    #f7f7f9;
+}
+
+/* Dark hero, echoing the deck's title slide */
+.bg-hero {
+  background:
+    radial-gradient(700px 380px at 85% 20%, rgb(228 0 0 / 0.55), transparent 65%),
+    radial-gradient(500px 300px at 10% 110%, rgb(228 0 0 / 0.25), transparent 70%),
+    linear-gradient(160deg, #1b0d0f 0%, #0d0d10 100%);
+}
+
+.shadow-card {
+  box-shadow: var(--shadow-card);
+}
+.shadow-lift {
+  box-shadow: var(--shadow-lift);
+}
+
+/* Subtle entrance for new chat bubbles and cards */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.animate-rise {
+  animation: rise 0.22s ease-out both;
+}
+
+@keyframes blink {
+  0%,
+  80%,
+  100% {
+    opacity: 0.25;
+  }
+  40% {
+    opacity: 1;
+  }
+}
+.typing-dot {
+  animation: blink 1.2s infinite both;
+}
+.typing-dot:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.typing-dot:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 rgb(228 0 0 / 0.45);
+  }
+  100% {
+    box-shadow: 0 0 0 10px rgb(228 0 0 / 0);
+  }
+}
+.pulse-ring {
+  animation: pulse-ring 1.6s ease-out infinite;
+}
+
+/* Skeleton shimmer for loading states */
+@keyframes shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+.skeleton {
+  background: linear-gradient(90deg, #ececf0 25%, #f6f6f8 50%, #ececf0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s linear infinite;
+  border-radius: 0.75rem;
+}
+
+/* Low-end phones: no motion unless the user is fine with it */
 @media (prefers-reduced-motion: reduce) {
   * {
     animation: none !important;
@@ -32,7 +130,7 @@ body {
 
 /* Leave room for the fixed bottom action bar on phones */
 .pb-action {
-  padding-bottom: calc(5.5rem + env(safe-area-inset-bottom));
+  padding-bottom: calc(6rem + env(safe-area-inset-bottom));
 }
 @media (min-width: 768px) {
   .pb-action {

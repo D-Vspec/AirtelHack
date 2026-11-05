@@ -1,30 +1,25 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { AdminGate } from "@/components/admin-gate";
-
-const TABS = [
-  { href: "/admin/leads", label: "Leads by score" },
-  { href: "/admin/handoff", label: "Partner handoff" },
-  { href: "/admin", label: "Orders" },
-  { href: "/admin/reviews", label: "KYC review queue" },
-  { href: "/admin/messages", label: "Messages" },
-  { href: "/admin/status", label: "Status" },
-];
+import { AdminNav } from "@/components/admin-nav";
 
 export default function AdminLayout({ children }: LayoutProps<"/admin">) {
   return (
-    <div className="min-h-screen">
-      <header className="border-b border-gray-200 bg-brand-900 text-white">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 px-4 py-3">
-          <Link href="/admin" className="font-bold">Udyam Digital · Back office</Link>
-          <Link href="/" className="text-sm underline">Owner journey</Link>
+    <div className="min-h-screen bg-[#f4f4f7]">
+      <header className="bg-ink-900 text-white">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-2 px-4 py-3">
+          <Link href="/admin" className="flex items-center gap-2 font-bold">
+            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-brand-600 text-sm">UD</span>
+            Udyam Digital <span className="font-normal text-white/60">· Back office</span>
+          </Link>
+          <Link href="/" className="rounded-xl px-3 py-1.5 text-sm text-white/80 ring-1 ring-white/20 hover:bg-white/10">Owner journey →</Link>
         </div>
-        <nav className="mx-auto flex max-w-6xl gap-1 overflow-x-auto px-4 pb-2">
-          {TABS.map((t) => (
-            <Link key={t.href} href={t.href} className="whitespace-nowrap rounded-lg px-3 py-2 text-sm hover:bg-white/10">{t.label}</Link>
-          ))}
-        </nav>
+        <Suspense><AdminNav variant="top" /></Suspense>
       </header>
-      <main className="mx-auto max-w-6xl px-4 py-6"><AdminGate>{children}</AdminGate></main>
+      <div className="mx-auto grid max-w-7xl gap-6 px-4 py-6 lg:grid-cols-[230px_1fr]">
+        <Suspense><AdminNav variant="side" /></Suspense>
+        <main className="min-w-0"><AdminGate>{children}</AdminGate></main>
+      </div>
     </div>
   );
 }
