@@ -42,6 +42,7 @@ export const AdvisorExtraction = z.object({
   lines: z.number().int().optional().describe("Mobile lines wanted"),
   cameras: z.number().int().optional(),
   devices: z.number().int().optional().describe("PCs/phones to protect"),
+  users: z.number().int().optional().describe("People who need per-user cloud tools (email/office seats) when the owner gives a number different from total staff"),
   counters: z.number().int().optional().describe("Billing counters"),
   vehicles: z.number().int().optional(),
   language: z.enum(LANGUAGE_NAMES).describe("Language of the owner's latest message"),

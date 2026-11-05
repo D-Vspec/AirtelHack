@@ -69,6 +69,24 @@ test("clinic: asks, then recommends an eligible priced bundle within the turn bu
   assert.ok(events.includes("advisor.profile.updated") && events.includes("bundle.recommended"));
 });
 
+test("'only 5 people on cloud' re-quotes email for 5, not the 10 staff", { skip: !live }, async () => {
+  const first = "dental clinic in Chennai, 10 staff, one branch, we have GST";
+  const change = "only 5 people need the cloud email";
+  const llm = fakeLlm({
+    [first]: { segment: "Professional offices", businessType: "Dental clinic", city: "Chennai", employeeCount: 10, numSites: 1, hasGstin: true },
+    [change]: { users: 5 },
+  });
+  const s = newSession("t-users");
+  await runTurn(s, first, { llm, services, emit });
+  const before = s.quote!;
+  assert.equal(before.lines.find((l) => l.productId === "P16")?.quantity, 10);
+  const r = await runTurn(s, change, { llm, services, emit });
+  assert.equal(r.brief.kind, "recommend", "a changed count makes a new quote, not a promise to re-quote");
+  assert.notEqual(s.quote!.id, before.id);
+  assert.equal(s.quote!.lines.find((l) => l.productId === "P16")?.quantity, 5);
+  assert.ok(s.quote!.monthlyTotalInr < before.monthlyTotalInr);
+});
+
 test("interest in a fibre plan does not add a second access link to the bundle", { skip: !live }, async () => {
   const msg = "physio clinic in Hyderabad, 5 staff, one branch, GSTIN, need reliable internet";
   const llm = fakeLlm({ [msg]: { segment: "Professional offices", businessType: "Physiotherapy clinic", city: "Hyderabad", employeeCount: 5, numSites: 1, hasGstin: true, productsOfInterest: ["P01"] } });

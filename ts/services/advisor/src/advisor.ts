@@ -21,7 +21,7 @@ export interface SessionState {
   turn: number;
   history: Turn[];
   profile: BusinessProfile;
-  counts: Partial<Record<"lines" | "cameras" | "devices" | "counters" | "vehicles", number>>;
+  counts: Partial<Record<"lines" | "cameras" | "devices" | "counters" | "vehicles" | "users", number>>;
   language: LanguageName;
   romanised: boolean;
   quote?: Quote;
@@ -73,7 +73,7 @@ export function merge(state: SessionState, ext: AdvisorExtraction, catalogueIds:
   if (typeof p.numSites === "number" && p.numSites < 1) delete p.numSites;
   const interests = new Set([...(state.profile.productsOfInterest ?? []), ...(ext.productsOfInterest ?? [])].filter((id) => catalogueIds.has(id)));
   if (interests.size) p.productsOfInterest = [...interests].sort();
-  for (const k of ["lines", "cameras", "devices", "counters", "vehicles"] as const) {
+  for (const k of ["lines", "cameras", "devices", "counters", "vehicles", "users"] as const) {
     if (ext[k] && ext[k]! > 0) state.counts[k] = ext[k];
   }
   const parsed = BusinessProfile.safeParse(p);
@@ -107,7 +107,7 @@ async function verifyGstin(state: SessionState, services: Services): Promise<voi
 }
 
 const COUNT_FOR_UNIT: Record<string, keyof SessionState["counts"]> = {
-  "per line": "lines", "per camera": "cameras", "per device": "devices", "per counter": "counters", "per vehicle": "vehicles",
+  "per line": "lines", "per camera": "cameras", "per device": "devices", "per counter": "counters", "per vehicle": "vehicles", "per user": "users",
 };
 
 /**
@@ -118,7 +118,7 @@ export function proposeQuantity(unit: string, state: SessionState): { quantity: 
   const key = COUNT_FOR_UNIT[unit];
   if (key && state.counts[key]) return { quantity: state.counts[key]!, assumed: false };
   const sites = state.profile.numSites ?? 1;
-  const n = key === "devices" ? state.profile.employeeCount ?? 1 : key === "counters" ? sites : key === "cameras" ? 2 * sites : 1;
+  const n = key === "devices" || key === "users" ? state.profile.employeeCount ?? 1 : key === "counters" ? sites : key === "cameras" ? 2 * sites : 1;
   return { quantity: n, assumed: true };
 }
 
@@ -223,7 +223,7 @@ async function decide(state: SessionState, ext: AdvisorExtraction, byId: Map<str
   }
   if (state.quote && state.quotedProfileKey === profileKey(state)) {
     return { kind: "follow_up", allowedProducts: names(state.quote, [], byId), facts: { ...common, ...quoteFacts(state.quote), ownerSaid: ext },
-      instructions: "Answer the owner's message using only the quote facts. If they ask for something not in the quote, say you will check and ask them to name it. Offer to go ahead with the quote." };
+      instructions: "Answer the owner's message using only the quote facts. Never promise to re-quote, update or send anything later: this quote is current. If they want a change you cannot see reflected in the facts, ask them to say exactly what to change (which product and how many). Offer to go ahead with the quote." };
   }
   return recommend(state, byId, deps, common, missing);
 }
@@ -248,6 +248,9 @@ async function recommend(state: SessionState, byId: Map<string, Product>, deps: 
   const assumptions: string[] = [];
   const add = (productId: string, unit: string, quantity: number | null) => {
     if (items.some((i) => i.productId === productId)) return;
+    // what the owner said (e.g. "only 5 people need cloud email") beats the staff-count default
+    const said = COUNT_FOR_UNIT[unit] && state.counts[COUNT_FOR_UNIT[unit]!];
+    if (said) { items.push({ productId, quantity: said }); return; }
     if (quantity === null) {
       const p = proposeQuantity(unit, state);
       if (p.assumed) assumptions.push(`${byId.get(productId)?.name}: priced for ${p.quantity} (${unit}); owner can change it`);
