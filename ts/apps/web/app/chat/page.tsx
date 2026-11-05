@@ -30,7 +30,7 @@ export default function ChatPage() {
   const [error, setError] = useState<string | null>(null);
   const [quote, setQuote] = useState<Quote | null>(null);
   const [handedOff, setHandedOff] = useState(false);
-  const endRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLOListElement>(null);
 
   // demo owners start with their scenario message ready to send
   useEffect(() => {
@@ -43,9 +43,10 @@ export default function ChatPage() {
     if (ready && j.quoteId && !quote) api.quotes.get(j.quoteId).then(setQuote).catch(() => {});
   }, [ready, j.quoteId, quote]);
 
-  // braces matter: scrollIntoView returns a Promise in current browsers, and React treats a returned value as cleanup
+  // Scroll the message list itself, never the page: the chat window moves, the screen stays put.
   useEffect(() => {
-    endRef.current?.scrollIntoView({ block: "end" });
+    const el = listRef.current;
+    if (el) el.scrollTo({ top: el.scrollHeight, behavior: j.messages.length > 1 ? "smooth" : "auto" });
   }, [j.messages.length, busy]);
 
   async function send(text: string) {
@@ -91,8 +92,8 @@ export default function ChatPage() {
   return (
     <Shell step={0} title={t("stepChat")}>
       <div className="grid gap-4 xl:grid-cols-[1fr_330px]">
-        <Card className="flex min-h-[55vh] flex-col p-3 sm:p-5">
-          <ol className="flex flex-1 flex-col gap-3" aria-live="polite">
+        <Card className={`flex min-h-[420px] flex-col p-3 sm:p-5 ${quote ? "h-[calc(100dvh-19rem)]" : "h-[calc(100dvh-14rem)]"} md:h-[calc(100dvh-13rem)] lg:h-[calc(100dvh-11rem)]`}>
+          <ol ref={listRef} className="-mx-1 flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-contain px-1 pb-2" aria-live="polite">
             {j.messages.length === 0 && (
               <li className="flex items-start gap-2">
                 <AdvisorAvatar />
@@ -122,7 +123,6 @@ export default function ChatPage() {
               </li>
             )}
           </ol>
-          <div ref={endRef} />
           {error && <div className="mt-3"><Alert tone="error">{error}</Alert></div>}
           {handedOff && <div className="mt-3" data-testid="handoff-done"><Alert tone="success">{t("handoffDone")}</Alert></div>}
 
