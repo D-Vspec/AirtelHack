@@ -10,7 +10,7 @@ func TestAdminOnlyRoutes(t *testing.T) {
 	admin := []struct{ m, u string }{
 		{"GET", "/api/kyc/reviews?status=open"}, {"POST", "/api/kyc/reviews/abc/decision"}, {"GET", "/api/scoring/leads"},
 		{"POST", "/api/scoring/tasks/x/claim"}, {"POST", "/api/tracker/orders/o1/transitions"}, {"GET", "/api/tracker/orders"},
-		{"GET", "/api/notify/messages"}, {"GET", "/api/kyc/metrics"},
+		{"GET", "/api/notify/messages"}, {"GET", "/api/kyc/metrics"}, {"GET", "/api/advisor/sessions/abc"},
 	}
 	owner := []struct{ m, u string }{
 		{"GET", "/api/tracker/orders?leadId=web-1"}, {"GET", "/api/notify/messages?leadId=web-1"}, {"POST", "/api/tracker/orders/o1/fallback/accept"},

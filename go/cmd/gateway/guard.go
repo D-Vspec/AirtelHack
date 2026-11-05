@@ -116,6 +116,7 @@ func adminOnly(r *http.Request) bool {
 	switch {
 	case strings.HasPrefix(p, "/api/kyc/reviews"),
 		strings.HasPrefix(p, "/api/scoring/tasks"), strings.HasPrefix(p, "/api/scoring/leads"),
+		strings.HasPrefix(p, "/api/advisor/sessions"), // full transcript + business profile
 		strings.HasSuffix(p, "/metrics"),
 		r.Method == http.MethodPost && strings.HasPrefix(p, "/api/tracker/orders/") && strings.HasSuffix(p, "/transitions"):
 		return true
