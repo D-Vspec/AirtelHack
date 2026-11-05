@@ -379,7 +379,7 @@ title(s, "Built like a production system, sized for a national rollout", "Demo t
 picture(s, DOCS / "architecture-demo.png", 0.55, 1.58, w=5.9)
 arch = [("Decisions are code", "eligibility, pricing and KYC verdicts are deterministic Go; the LLM only talks and explains"),
         ("Nothing is lost", "transactional outbox + idempotent consumers + dead-letter topic; Kafka or a service down: no event lost (drills pass)"),
-        ("Private by design", "one schema and one database role per service; masked IDs in logs and events"),
+        ("Private by design", "one schema + DB role per service; masked IDs; chat transcripts back-office only; owner OTP + partner ReBAC next"),
         ("National scale", "regional gateways, Kafka partitioned by lead, multi-region DB with data residency")]
 for i, (h, d) in enumerate(arch):
     y = 1.6 + i * 0.86
@@ -389,7 +389,8 @@ for i, (h, d) in enumerate(arch):
 s.notes_slide.notes_text_frame.text = (
     "Under the hood it's built like a production system. Web and mobile talk to one gateway; eight services own their own data; events "
     "flow over Kafka with a transactional outbox, so in our failure drills, stopping Kafka, a service or the database lost nothing. "
-    "Eligibility, pricing and KYC are deterministic code: the language model never decides what is sold. The same design scales "
+    "Eligibility, pricing and KYC are deterministic code: the language model never decides what is sold. Each service has its own database role, "
+    "chat transcripts are back-office only, and owner OTP login with partner access rules is next. The same design scales "
     "nationally with regional gateways, partitioned Kafka and a multi-region database.")
 
 # ---- 9. Rollout + KPIs ----------------------------------------------------------------------------------
@@ -424,7 +425,7 @@ s.notes_slide.notes_text_frame.text = (
 # ---- 10. Risks & asks -----------------------------------------------------------------------------------
 s = new_content_slide()
 title(s, "Risks we've designed for, and what we need to launch", "Udyam Digital: from 7.4% to a journey owners finish on their phone")
-risks = [("AI gets it wrong", "rules + prices are code; reply guard; eval gate ≥ 90% per language"),
+risks = [("AI wrong or tricked", "prices are code; reply guard blocked 6/6 prompt-injection attacks; eval ≥ 90%"),
          ("Language quality", "per-language evals; native-speaker review of UI and messages"),
          ("DPDP compliance", "consent per purpose, deletion, masked IDs; DPO sign-off on retention"),
          ("Score bias", "score only orders call lists; fairness review by language and city tier"),
@@ -447,7 +448,8 @@ text(s, 6.72, 2.05, 2.6, 2.85, [
     [("Billing & support: ", {"bold": True}), ("one bill, tracker for 'where is my order'", {})]],
     size=9.5, color=WHITE, spacing=4)
 s.notes_slide.notes_text_frame.text = (
-    "We've designed for the main risks: the AI can't make up products or prices because those are code, every language is evaluated, "
+    "We've designed for the main risks: the AI can't make up products or prices because those are code, and it can't be talked into one either: "
+    "a reply guard blocked all six prompt-injection attacks we tried. Every language is evaluated, "
     "privacy follows the DPDP Act, the score only orders call lists, partners are credited for handoffs, and an infeasible fibre site gets "
     "a 5G offer instead of a lost order. To launch, we need sales leadership to approve the pilot, compliance to sign off consent and "
     "retention, and network and billing to plug in feasibility and one-bill invoicing. Thank you.")
