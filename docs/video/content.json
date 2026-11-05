@@ -1,6 +1,6 @@
 {
   "title": "Udyam Digital: demo video script and test guide",
-  "subtitle": "Airtel SYNC hackathon · 3-minute video · checked against the live system on 6 Nov 2026",
+  "subtitle": "Airtel SYNC hackathon · 3-minute video · checked against the live system on 6 Nov 2026 (factory case re-checked after the fix)",
   "setup": [
     "Start the stack: docker compose up -d (wait about a minute), then make seed if the database is new.",
     "Start the web app: cd ts/apps/web, then npx next start -p 3000 -H 0.0.0.0.",
@@ -12,116 +12,434 @@
     "Open docs/Udyam_Digital_SYNC_Submission.pptx on slide 2, and keep a terminal open in the repo."
   ],
   "script": [
-    ["0:00–0:12", "Deck slide 2: the funnel and \"1,485 drops (32%)\"", "Five thousand small-business leads, three hundred and sixty-eight activations. A third of the losses are friction: no time for a sales visit, quotes that take days, paperwork. Udyam Digital turns all of it into one phone session."],
-    ["0:12–0:20", "Phone home screen. Tap தமிழ், then the demo owner \"Dental clinic, Chennai (Tamil)\"", "The owner picks a language: ten Indian languages, on the web or in our app."],
-    ["0:20–0:45", "Chat: send the prefilled Tamil message. The advisor answers in Tamil and the quote card shows ₹3,933 a month", "Our AI advisor asks only what it needs and recommends a bundle in the owner's language. The AI never invents a product or a price: eligibility and pricing are rules in code, and a guard blocks any number the quote service did not produce."],
-    ["0:45–0:57", "Quote: switch on Backup 4G/5G Failover. The total goes to ₹4,507 a month plus ₹1,500 one-time. Tap Accept", "One monthly price, the one-time charge shown separately, and add-ons with one switch. Dependencies are enforced."],
-    ["0:57–1:05", "Consent screen, then I agree", "Consent comes first, per purpose, under the DPDP Act. The owner can withdraw it and delete everything in one tap."],
-    ["1:05–1:30", "KYC: upload data/kyc_documents/K04_gst_certificate.png, and \"too blurry\" appears. Then Use sample documents (K03), Check my documents, \"All documents verified\"", "Smart KYC catches a blurred photo the moment it is taken. OCR reads the certificates, GSTIN and Udyam numbers are checked against the registries, and names, address, bill age and ID validity are cross-checked. All twelve test applicants come out as expected."],
-    ["1:30–1:48", "Track: the stepper runs to Live, and WhatsApp messages in Tamil appear", "Instead of calling support, the owner gets a WhatsApp update at every step, in their language. If fibre is not possible at the address, we offer 5G AirFiber instead of losing the order."],
-    ["1:48–2:10", "Account (👤): sign in with a mobile number and the demo code. The past order is listed. Start a new order, then at KYC: Use your verified documents, Nothing has changed, Verified", "Returning customers sign in with a one-time code, see every order and track it. A new order doesn't repeat the paperwork: we re-check the GST and Udyam registries live and the ID's validity. If nothing changed, it is verified in one tap. If anything changed, we ask for fresh documents."],
-    ["2:10–2:25", "Back office: KYC review queue. Open the K07 case (name mismatch) and Approve", "Unclear cases, like a different name on one certificate, go to a human reviewer. We never silently reject a customer."],
-    ["2:25–2:40", "Back office: Leads by score, then Partner handoff", "Field sales and partners get warm leads ranked by a propensity model that finds 2.4 times more buyers than random calling, with the advisor's summary attached."],
-    ["2:40–3:00", "Terminal: make scenarios ends with \"33 passed, 0 failed\". Then deck slide 8, the architecture", "Thirty-three user stories pass against the live system, and in our failure drills no event was lost. We start with professional offices, then multi-site businesses and manufacturers. Thank you."]
+    [
+      "0:00–0:12",
+      "Deck slide 2: the funnel and \"1,485 drops (32%)\"",
+      "Five thousand small-business leads, three hundred and sixty-eight activations. A third of the losses are friction: no time for a sales visit, quotes that take days, paperwork. Udyam Digital turns all of it into one phone session."
+    ],
+    [
+      "0:12–0:20",
+      "Phone home screen. Tap தமிழ், then the demo owner \"Dental clinic, Chennai (Tamil)\"",
+      "The owner picks a language: ten Indian languages, on the web or in our app."
+    ],
+    [
+      "0:20–0:45",
+      "Chat: send the prefilled Tamil message. The advisor answers in Tamil and the quote card shows ₹3,933 a month",
+      "Our AI advisor asks only what it needs and recommends a bundle in the owner's language. The AI never invents a product or a price: eligibility and pricing are rules in code, and a guard blocks any number the quote service did not produce."
+    ],
+    [
+      "0:45–0:57",
+      "Quote: switch on Backup 4G/5G Failover. The total goes to ₹4,507 a month plus ₹1,500 one-time. Tap Accept",
+      "One monthly price, the one-time charge shown separately, and add-ons with one switch. Dependencies are enforced."
+    ],
+    [
+      "0:57–1:05",
+      "Consent screen, then I agree",
+      "Consent comes first, per purpose, under the DPDP Act. The owner can withdraw it and delete everything in one tap."
+    ],
+    [
+      "1:05–1:30",
+      "KYC: upload data/kyc_documents/K04_gst_certificate.png, and \"too blurry\" appears. Then Use sample documents (K03), Check my documents, \"All documents verified\"",
+      "Smart KYC catches a blurred photo the moment it is taken. OCR reads the certificates, GSTIN and Udyam numbers are checked against the registries, and names, address, bill age and ID validity are cross-checked. All twelve test applicants come out as expected."
+    ],
+    [
+      "1:30–1:48",
+      "Track: the stepper runs to Live, and WhatsApp messages in Tamil appear",
+      "Instead of calling support, the owner gets a WhatsApp update at every step, in their language. If fibre is not possible at the address, we offer 5G AirFiber instead of losing the order."
+    ],
+    [
+      "1:48–2:10",
+      "Account (👤): sign in with a mobile number and the demo code. The past order is listed. Start a new order, then at KYC: Use your verified documents, Nothing has changed, Verified",
+      "Returning customers sign in with a one-time code, see every order and track it. A new order doesn't repeat the paperwork: we re-check the GST and Udyam registries live and the ID's validity. If nothing changed, it is verified in one tap. If anything changed, we ask for fresh documents."
+    ],
+    [
+      "2:10–2:25",
+      "Back office: KYC review queue. Open the K07 case (name mismatch) and Approve",
+      "Unclear cases, like a different name on one certificate, go to a human reviewer. We never silently reject a customer."
+    ],
+    [
+      "2:25–2:40",
+      "Back office: Leads by score, then Partner handoff",
+      "Field sales and partners get warm leads ranked by a propensity model that finds 2.4 times more buyers than random calling, with the advisor's summary attached."
+    ],
+    [
+      "2:40–3:00",
+      "Terminal: make scenarios ends with \"33 passed, 0 failed\". Then deck slide 8, the architecture",
+      "Thirty-three user stories pass against the live system, and in our failure drills no event was lost. We start with professional offices, then multi-site businesses and manufacturers. Thank you."
+    ]
   ],
   "advisor": [
-    {"id": "A1", "name": "Dental clinic, Chennai (Tamil)", "start": "Demo owner button", "say": "(prefilled) வணக்கம், நான் சென்னையில் ஒரு பல் மருத்துவமனை நடத்துகிறேன். 6 பேர் வேலை செய்கிறார்கள், ஒரே கிளை, GSTIN உள்ளது.",
-     "lines": ["P02 Biz Fibre 300 ×1: ₹1,724", "P16 Cloud Email ×6: ₹822", "P17 Cloud Backup 1 TB ×1: ₹649", "P20 Endpoint Security ×6: ₹738"],
-     "monthly": "₹3,933", "oneTime": "₹0", "contract": "12 mo · ₹47,196 total · install 5 days",
-     "check": "Reply is in Tamil. Switching on Failover (P09) adds ₹574/mo and ₹1,500 one-time, for ₹4,507/mo."},
-    {"id": "A2", "name": "Kirana store, Lucknow (Hindi, no GSTIN)", "start": "Demo owner button", "say": "(prefilled) Hindi: kirana shop, 2 staff, one shop, no GSTIN, wants UPI billing and internet",
-     "lines": ["P01 Biz Fibre 100 ×1: ₹1,149", "P19 Cloud POS & Billing ×1: ₹824", "P07 Business Postpaid 299 ×1: ₹374"],
-     "monthly": "₹2,347", "oneTime": "₹2,500", "contract": "12 mo · ₹30,664 total · install 5 days",
-     "check": "WhatsApp API (P15) and SMS (P14) are excluded because they need a GSTIN, and the reply says GST registration unlocks them. Tier 2, so no 1 Gbps."},
-    {"id": "A3", "name": "CA firm asks for a firewall (English)", "start": "Demo owner button", "say": "Hi, we are a CA firm in Pune with 8 employees, one office, we have GSTIN. We want a managed firewall and fast internet.",
-     "lines": ["P02 Biz Fibre 300 ×1: ₹1,724", "P16 Cloud Email ×8: ₹1,072", "P17 Cloud Backup ×1: ₹649", "P20 Endpoint Security ×8: ₹936"],
-     "monthly": "₹4,381", "oneTime": "₹0", "contract": "12 mo · ₹52,572 total",
-     "check": "Managed Firewall (P21) is excluded (needs 10+ staff, they have 8), with Endpoint Security offered instead."},
-    {"id": "A4", "name": "Restaurant chain, 5 sites, Bengaluru", "start": "Demo owner button", "say": "We run 5 restaurants in Bengaluru, 40 staff in total, GSTIN registered. Need internet at every outlet, CCTV and billing.",
-     "lines": ["P02 Biz Fibre 300 ×5: ₹8,285", "P09 Failover ×5: ₹2,760", "P23 Cloud CCTV ×10: ₹2,240", "P19 Cloud POS ×5: ₹3,785"],
-     "monthly": "₹17,070", "oneTime": "₹38,000", "contract": "12 mo · ₹2,42,840 total",
-     "check": "Per-site lines on one bill. The advisor assumes 2 cameras per outlet and says so. SD-WAN (P10) is allowed (3+ sites, 10+ staff, GSTIN)."},
-    {"id": "A5", "name": "Just a mobile plan (Hinglish)", "start": "Demo owner button", "say": "Bhai mujhe sirf 2 mobile connection chahiye business ke liye, Indore mein shop hai, GSTIN hai.",
-     "lines": ["P07 Business Postpaid 299 ×2: ₹782"],
-     "monthly": "₹782", "oneTime": "₹0", "contract": "1 mo · ₹782 total · 1 day",
-     "check": "No bundle forced; the reply is in Hinglish with a soft upsell later."},
-    {"id": "A6", "name": "Physio clinic, fibre not feasible (Hyderabad)", "start": "Demo owner button", "say": "I run a physiotherapy clinic in Hyderabad, 5 staff, one branch, we have GSTIN. Need reliable internet and email.",
-     "lines": ["P02 Biz Fibre 300 ×1: ₹1,724", "P16 Cloud Email ×5: ₹690", "P17 Cloud Backup ×1: ₹649", "P20 Endpoint Security ×5: ₹625"],
-     "monthly": "₹3,688", "oneTime": "₹0", "contract": "12 mo · ₹44,256 total",
-     "check": "After KYC (K09 passes), Track shows Delayed (fibre not feasible), then offers 5G AirFiber (P04). Accept it and the order goes Live."},
-    {"id": "A7", "name": "Tier 2 city asks for a Tier 1 product", "start": "Type it", "say": "I run an architecture office in Nagpur, 12 staff, one office, GSTIN yes. I want the 1 Gbps fibre.",
-     "lines": ["P02 Biz Fibre 300 ×1: ₹1,724", "P16 Cloud Email ×12: ₹1,572", "P17 Cloud Backup ×1: ₹649", "P20 Endpoint Security ×12: ₹1,344"],
-     "monthly": "₹5,289", "oneTime": "₹0", "contract": "12 mo · ₹63,468 total",
-     "check": "Biz Fibre 1G (P03) is refused (Tier 1 only), with Biz Fibre 300 offered as the closest option."},
-    {"id": "A8", "name": "Small manufacturer, 40 staff, Pune", "start": "Type it", "say": "We are a small auto-parts manufacturer in Pune, 40 staff, one factory, GSTIN registered. Need internet and machine monitoring for 10 machines.",
-     "lines": ["P05 Leased Line 20 ×1: ₹11,000", "P24 Machine Monitoring ×40: ₹5,960", "P20 Endpoint Security ×40: ₹4,480"],
-     "monthly": "₹21,440", "oneTime": "₹1,30,000", "contract": "12 mo · ₹4,58,800 total · install 21 days",
-     "check": "KNOWN ISSUE: the owner said 10 machines, but the quote uses 40 (staff count). Keep this case off camera until it is fixed. The leased line and the 21-day install estimate are correct."},
-    {"id": "A9", "name": "CCTV only, no internet (Jaipur, no GSTIN)", "start": "Type it", "say": "I have a clothes shop in Jaipur, 3 staff, one shop, no GSTIN. I only want 2 CCTV cameras.",
-     "lines": ["P01 Biz Fibre 100 ×1: ₹1,149", "P19 Cloud POS ×1: ₹824", "P07 Postpaid 299 ×1: ₹374", "P23 Cloud CCTV ×2: ₹536"],
-     "monthly": "₹2,883", "oneTime": "₹6,100", "contract": "12 mo · ₹40,696 total",
-     "check": "Cloud CCTV needs internet, so connectivity is added. The advisor also kept the shop bundle (POS, mobile line): say \"only internet and cameras\" to trim it."},
-    {"id": "A10", "name": "\"Too expensive\" (Mumbai salon)", "start": "Type it, then a chip", "say": "I run a small beauty salon in Mumbai, 3 staff, one shop, no GSTIN. Need internet and billing.  Then tap: Too expensive",
-     "lines": ["P04 Biz 5G AirFiber 100 ×1: ₹1,049", "P19 Cloud POS ×1: ₹824"],
-     "monthly": "₹1,873 (was ₹2,347)", "oneTime": "₹2,500", "contract": "12 mo · ₹24,976 total · install 3 days",
-     "check": "A cheaper path with the total cost shown and the old price compared."},
-    {"id": "A11", "name": "Re-quote: fewer cloud users (Delhi law office)", "start": "Type two messages", "say": "We are a law office in Delhi, 10 staff, one office, GSTIN yes.  Then: Only 5 people need cloud email",
-     "lines": ["P02 Biz Fibre 300 ×1: ₹1,724", "P16 Cloud Email ×5: ₹690", "P17 Cloud Backup ×1: ₹649", "P20 Endpoint Security ×10: ₹1,120"],
-     "monthly": "₹4,183 (first quote ≈ ₹4,803 with 10 users)", "oneTime": "₹0", "contract": "12 mo · ₹50,196 total",
-     "check": "The new quote arrives in the same reply. It must not say \"I'll update it later\"."},
-    {"id": "A12", "name": "Tanglish (Coimbatore medical shop)", "start": "Type it", "say": "Vanakkam, enaku Coimbatore la oru chinna medical shop irukku, 2 per velai seiyuranga, GSTIN irukku. Billing machine um internet um venum.",
-     "lines": ["P01 Biz Fibre 100 ×1: ₹1,149", "P19 Cloud POS ×1: ₹824", "P07 Postpaid 299 ×1: ₹374"],
-     "monthly": "₹2,347", "oneTime": "₹2,500", "contract": "12 mo · ₹30,664 total",
-     "check": "Reply in Tanglish (Tamil in Latin letters), with an offer to switch to Tamil script."}
+    {
+      "id": "A1",
+      "name": "Dental clinic, Chennai (Tamil)",
+      "start": "Demo owner button",
+      "say": "(prefilled) வணக்கம், நான் சென்னையில் ஒரு பல் மருத்துவமனை நடத்துகிறேன். 6 பேர் வேலை செய்கிறார்கள், ஒரே கிளை, GSTIN உள்ளது.",
+      "lines": [
+        "P02 Biz Fibre 300 ×1: ₹1,724",
+        "P16 Cloud Email ×6: ₹822",
+        "P17 Cloud Backup 1 TB ×1: ₹649",
+        "P20 Endpoint Security ×6: ₹738"
+      ],
+      "monthly": "₹3,933",
+      "oneTime": "₹0",
+      "contract": "12 mo · ₹47,196 total · install 5 days",
+      "check": "Reply is in Tamil. Switching on Failover (P09) adds ₹574/mo and ₹1,500 one-time, for ₹4,507/mo."
+    },
+    {
+      "id": "A2",
+      "name": "Kirana store, Lucknow (Hindi, no GSTIN)",
+      "start": "Demo owner button",
+      "say": "(prefilled) Hindi: kirana shop, 2 staff, one shop, no GSTIN, wants UPI billing and internet",
+      "lines": [
+        "P01 Biz Fibre 100 ×1: ₹1,149",
+        "P19 Cloud POS & Billing ×1: ₹824",
+        "P07 Business Postpaid 299 ×1: ₹374"
+      ],
+      "monthly": "₹2,347",
+      "oneTime": "₹2,500",
+      "contract": "12 mo · ₹30,664 total · install 5 days",
+      "check": "WhatsApp API (P15) and SMS (P14) are excluded because they need a GSTIN, and the reply says GST registration unlocks them. Tier 2, so no 1 Gbps."
+    },
+    {
+      "id": "A3",
+      "name": "CA firm asks for a firewall (English)",
+      "start": "Demo owner button",
+      "say": "Hi, we are a CA firm in Pune with 8 employees, one office, we have GSTIN. We want a managed firewall and fast internet.",
+      "lines": [
+        "P02 Biz Fibre 300 ×1: ₹1,724",
+        "P16 Cloud Email ×8: ₹1,072",
+        "P17 Cloud Backup ×1: ₹649",
+        "P20 Endpoint Security ×8: ₹936"
+      ],
+      "monthly": "₹4,381",
+      "oneTime": "₹0",
+      "contract": "12 mo · ₹52,572 total",
+      "check": "Managed Firewall (P21) is excluded (needs 10+ staff, they have 8), with Endpoint Security offered instead."
+    },
+    {
+      "id": "A4",
+      "name": "Restaurant chain, 5 sites, Bengaluru",
+      "start": "Demo owner button",
+      "say": "We run 5 restaurants in Bengaluru, 40 staff in total, GSTIN registered. Need internet at every outlet, CCTV and billing.",
+      "lines": [
+        "P02 Biz Fibre 300 ×5: ₹8,285",
+        "P09 Failover ×5: ₹2,760",
+        "P23 Cloud CCTV ×10: ₹2,240",
+        "P19 Cloud POS ×5: ₹3,785"
+      ],
+      "monthly": "₹17,070",
+      "oneTime": "₹38,000",
+      "contract": "12 mo · ₹2,42,840 total",
+      "check": "Per-site lines on one bill. The advisor assumes 2 cameras per outlet and says so. SD-WAN (P10) is allowed (3+ sites, 10+ staff, GSTIN)."
+    },
+    {
+      "id": "A5",
+      "name": "Just a mobile plan (Hinglish)",
+      "start": "Demo owner button",
+      "say": "Bhai mujhe sirf 2 mobile connection chahiye business ke liye, Indore mein shop hai, GSTIN hai.",
+      "lines": [
+        "P07 Business Postpaid 299 ×2: ₹782"
+      ],
+      "monthly": "₹782",
+      "oneTime": "₹0",
+      "contract": "1 mo · ₹782 total · 1 day",
+      "check": "No bundle forced; the reply is in Hinglish with a soft upsell later."
+    },
+    {
+      "id": "A6",
+      "name": "Physio clinic, fibre not feasible (Hyderabad)",
+      "start": "Demo owner button",
+      "say": "I run a physiotherapy clinic in Hyderabad, 5 staff, one branch, we have GSTIN. Need reliable internet and email.",
+      "lines": [
+        "P02 Biz Fibre 300 ×1: ₹1,724",
+        "P16 Cloud Email ×5: ₹690",
+        "P17 Cloud Backup ×1: ₹649",
+        "P20 Endpoint Security ×5: ₹625"
+      ],
+      "monthly": "₹3,688",
+      "oneTime": "₹0",
+      "contract": "12 mo · ₹44,256 total",
+      "check": "After KYC (K09 passes), Track shows Delayed (fibre not feasible), then offers 5G AirFiber (P04). Accept it and the order goes Live."
+    },
+    {
+      "id": "A7",
+      "name": "Tier 2 city asks for a Tier 1 product",
+      "start": "Type it",
+      "say": "I run an architecture office in Nagpur, 12 staff, one office, GSTIN yes. I want the 1 Gbps fibre.",
+      "lines": [
+        "P02 Biz Fibre 300 ×1: ₹1,724",
+        "P16 Cloud Email ×12: ₹1,572",
+        "P17 Cloud Backup ×1: ₹649",
+        "P20 Endpoint Security ×12: ₹1,344"
+      ],
+      "monthly": "₹5,289",
+      "oneTime": "₹0",
+      "contract": "12 mo · ₹63,468 total",
+      "check": "Biz Fibre 1G (P03) is refused (Tier 1 only), with Biz Fibre 300 offered as the closest option."
+    },
+    {
+      "id": "A8",
+      "name": "Small manufacturer, 40 staff, Pune",
+      "start": "Type it",
+      "say": "We are a small auto-parts manufacturer in Pune, 40 staff, one factory, GSTIN registered. Need internet and machine monitoring for 10 machines.",
+      "lines": [
+        "P05 Leased Line 20 ×1: ₹11,000",
+        "P24 Machine Monitoring ×10: ₹1,490 (24-mo term)",
+        "P20 Endpoint Security ×40: ₹4,480"
+      ],
+      "monthly": "₹16,970",
+      "oneTime": "₹40,000",
+      "contract": "12 mo (monitoring 24 mo) · ₹2,61,520 total · install 21 days",
+      "check": "Monitoring for the 10 machines, Endpoint Security for the 40 staff (stated as an assumption). The reply says Machine Monitoring needs a 24-month contract."
+    },
+    {
+      "id": "A9",
+      "name": "CCTV only, no internet (Jaipur, no GSTIN)",
+      "start": "Type it",
+      "say": "I have a clothes shop in Jaipur, 3 staff, one shop, no GSTIN. I only want 2 CCTV cameras.",
+      "lines": [
+        "P01 Biz Fibre 100 ×1: ₹1,149",
+        "P19 Cloud POS ×1: ₹824",
+        "P07 Postpaid 299 ×1: ₹374",
+        "P23 Cloud CCTV ×2: ₹536"
+      ],
+      "monthly": "₹2,883",
+      "oneTime": "₹6,100",
+      "contract": "12 mo · ₹40,696 total",
+      "check": "Cloud CCTV needs internet, so connectivity is added. The advisor also kept the shop bundle (POS, mobile line): say \"only internet and cameras\" to trim it."
+    },
+    {
+      "id": "A10",
+      "name": "\"Too expensive\" (Mumbai salon)",
+      "start": "Type it, then a chip",
+      "say": "I run a small beauty salon in Mumbai, 3 staff, one shop, no GSTIN. Need internet and billing.  Then tap: Too expensive",
+      "lines": [
+        "P04 Biz 5G AirFiber 100 ×1: ₹1,049",
+        "P19 Cloud POS ×1: ₹824"
+      ],
+      "monthly": "₹1,873 (was ₹2,347)",
+      "oneTime": "₹2,500",
+      "contract": "12 mo · ₹24,976 total · install 3 days",
+      "check": "A cheaper path with the total cost shown and the old price compared."
+    },
+    {
+      "id": "A11",
+      "name": "Re-quote: fewer cloud users (Delhi law office)",
+      "start": "Type two messages",
+      "say": "We are a law office in Delhi, 10 staff, one office, GSTIN yes.  Then: Only 5 people need cloud email",
+      "lines": [
+        "P02 Biz Fibre 300 ×1: ₹1,724",
+        "P16 Cloud Email ×5: ₹690",
+        "P17 Cloud Backup ×1: ₹649",
+        "P20 Endpoint Security ×10: ₹1,120"
+      ],
+      "monthly": "₹4,183 (first quote ≈ ₹4,803 with 10 users)",
+      "oneTime": "₹0",
+      "contract": "12 mo · ₹50,196 total",
+      "check": "The new quote arrives in the same reply. It must not say \"I'll update it later\"."
+    },
+    {
+      "id": "A12",
+      "name": "Tanglish (Coimbatore medical shop)",
+      "start": "Type it",
+      "say": "Vanakkam, enaku Coimbatore la oru chinna medical shop irukku, 2 per velai seiyuranga, GSTIN irukku. Billing machine um internet um venum.",
+      "lines": [
+        "P01 Biz Fibre 100 ×1: ₹1,149",
+        "P19 Cloud POS ×1: ₹824",
+        "P07 Postpaid 299 ×1: ₹374"
+      ],
+      "monthly": "₹2,347",
+      "oneTime": "₹2,500",
+      "contract": "12 mo · ₹30,664 total",
+      "check": "Reply in Tanglish (Tamil in Latin letters), with an offer to switch to Tamil script."
+    }
   ],
   "kyc": [
-    ["K01", "Reject", "GSTIN cancelled in the registry, and the Udyam number is blank", "Demo owner \"Just a mobile plan\""],
-    ["K02", "Pass", "GST certificate tilted about 7°: straightened automatically", "Upload K02_* files"],
-    ["K03", "Pass", "Clean control", "Any owner: Use sample documents (K03)"],
-    ["K04", "Re-upload", "GST certificate heavily blurred: flagged as soon as it is uploaded", "Upload K04_gst_certificate.png"],
-    ["K05", "Re-upload", "No Udyam certificate submitted", "Upload K05_* files (only 3)"],
-    ["K06", "Manual review", "GSTIN typed with one wrong digit: checksum fails, closest registry match suggested", "Upload K06_* files"],
-    ["K07", "Manual review", "Legal name differs between the certificate and the registry", "Demo owner \"CA firm\""],
-    ["K08", "Pass", "Clean; the GSTIN's letter O is read as zero and corrected by the registry", "Upload K08_* files"],
-    ["K09", "Pass", "Clean control", "Demo owner \"Physio clinic\""],
-    ["K10", "Pass", "Clean; LLP signatory can't be checked against partners (no data)", "Upload K10_* files"],
-    ["K11", "Re-upload", "Electricity bill older than 90 days", "Demo owner \"Kirana store\""],
-    ["K12", "Pass", "Clean control", "Demo owner \"Restaurant chain\""]
+    [
+      "K01",
+      "Reject",
+      "GSTIN cancelled in the registry, and the Udyam number is blank",
+      "Demo owner \"Just a mobile plan\""
+    ],
+    [
+      "K02",
+      "Pass",
+      "GST certificate tilted about 7°: straightened automatically",
+      "Upload K02_* files"
+    ],
+    [
+      "K03",
+      "Pass",
+      "Clean control",
+      "Any owner: Use sample documents (K03)"
+    ],
+    [
+      "K04",
+      "Re-upload",
+      "GST certificate heavily blurred: flagged as soon as it is uploaded",
+      "Upload K04_gst_certificate.png"
+    ],
+    [
+      "K05",
+      "Re-upload",
+      "No Udyam certificate submitted",
+      "Upload K05_* files (only 3)"
+    ],
+    [
+      "K06",
+      "Manual review",
+      "GSTIN typed with one wrong digit: checksum fails, closest registry match suggested",
+      "Upload K06_* files"
+    ],
+    [
+      "K07",
+      "Manual review",
+      "Legal name differs between the certificate and the registry",
+      "Demo owner \"CA firm\""
+    ],
+    [
+      "K08",
+      "Pass",
+      "Clean; the GSTIN's letter O is read as zero and corrected by the registry",
+      "Upload K08_* files"
+    ],
+    [
+      "K09",
+      "Pass",
+      "Clean control",
+      "Demo owner \"Physio clinic\""
+    ],
+    [
+      "K10",
+      "Pass",
+      "Clean; LLP signatory can't be checked against partners (no data)",
+      "Upload K10_* files"
+    ],
+    [
+      "K11",
+      "Re-upload",
+      "Electricity bill older than 90 days",
+      "Demo owner \"Kirana store\""
+    ],
+    [
+      "K12",
+      "Pass",
+      "Clean control",
+      "Demo owner \"Restaurant chain\""
+    ]
   ],
   "kycRoutes": [
-    ["Pass", "Order moves to KYC verified, then installation is scheduled, then Installing, then Live. A WhatsApp message goes out at each step."],
-    ["Re-upload", "The owner sees what is wrong with each document and how to fix it. Nothing is rejected."],
-    ["Manual review", "The case appears in Back office → KYC review queue with the reasons. Approve moves the order on; Reject stops it with a message."],
-    ["Reject", "Blocked with a clear reason (e.g. GSTIN cancelled) and the next step to take; no order is provisioned."]
+    [
+      "Pass",
+      "Order moves to KYC verified, then installation is scheduled, then Installing, then Live. A WhatsApp message goes out at each step."
+    ],
+    [
+      "Re-upload",
+      "The owner sees what is wrong with each document and how to fix it. Nothing is rejected."
+    ],
+    [
+      "Manual review",
+      "The case appears in Back office → KYC review queue with the reasons. Approve moves the order on; Reject stops it with a message."
+    ],
+    [
+      "Reject",
+      "Blocked with a clear reason (e.g. GSTIN cancelled) and the next step to take; no order is provisioned."
+    ]
   ],
   "reuse": [
-    ["Signed in, verified before, ticked \"Nothing has changed\"", "Verified in one tap; the order shows the \"KYC reused\" badge", "Yes: first order with K03, then a new order"],
-    ["\"Something changed?\" link", "Reuse card hides; the owner uploads new documents (full check)", "Yes"],
-    ["Guest (not signed in)", "\"Ordered before? Sign in to skip the documents\" link", "Yes"],
-    ["Last check older than 365 days", "Fresh documents: \"more than a year old\"", "Unit test only"],
-    ["Signatory ID expired since", "Fresh documents: \"signatory ID has expired\"", "Unit test only"],
-    ["GSTIN cancelled or name/address changed in the registry", "Fresh documents with the reason", "Unit test only"],
-    ["Registry down", "No reuse; full check (never a pass without the live check)", "Unit test only"]
+    [
+      "Signed in, verified before, ticked \"Nothing has changed\"",
+      "Verified in one tap; the order shows the \"KYC reused\" badge",
+      "Yes: first order with K03, then a new order"
+    ],
+    [
+      "\"Something changed?\" link",
+      "Reuse card hides; the owner uploads new documents (full check)",
+      "Yes"
+    ],
+    [
+      "Guest (not signed in)",
+      "\"Ordered before? Sign in to skip the documents\" link",
+      "Yes"
+    ],
+    [
+      "Last check older than 365 days",
+      "Fresh documents: \"more than a year old\"",
+      "Unit test only"
+    ],
+    [
+      "Signatory ID expired since",
+      "Fresh documents: \"signatory ID has expired\"",
+      "Unit test only"
+    ],
+    [
+      "GSTIN cancelled or name/address changed in the registry",
+      "Fresh documents with the reason",
+      "Unit test only"
+    ],
+    [
+      "Registry down",
+      "No reuse; full check (never a pass without the live check)",
+      "Unit test only"
+    ]
   ],
   "fulfilment": [
-    ["Normal", "Quote accepted → KYC → KYC verified → Installation scheduled → Installing → Live (a few seconds each in the demo)"],
-    ["Fibre not feasible", "Lead IDs containing \"nofibre\" (demo owner: Physio clinic): Delayed → 5G AirFiber offered → accept → Live"],
-    ["Consent withdrawn", "On the consent or KYC page: withdraw → documents deleted → confirmation message"],
-    ["Advisor can't close", "A custom request becomes a partner task with the chat summary (Back office → Partner handoff)"]
+    [
+      "Normal",
+      "Quote accepted → KYC → KYC verified → Installation scheduled → Installing → Live (a few seconds each in the demo)"
+    ],
+    [
+      "Fibre not feasible",
+      "Lead IDs containing \"nofibre\" (demo owner: Physio clinic): Delayed → 5G AirFiber offered → accept → Live"
+    ],
+    [
+      "Consent withdrawn",
+      "On the consent or KYC page: withdraw → documents deleted → confirmation message"
+    ],
+    [
+      "Advisor can't close",
+      "A custom request becomes a partner task with the chat summary (Back office → Partner handoff)"
+    ]
   ],
   "screens": [
-    ["/", "Home: language, Start, demo owners, 👤 account"],
-    ["/chat", "AI advisor chat with quick-reply chips and the quote card"],
-    ["/quote", "Quote: lines, add-on switches, contract, Accept"],
-    ["/consent", "Per-purpose consent (DPDP)"],
-    ["/kyc", "Documents: camera upload, sample documents, reuse card, Check my documents"],
-    ["/track", "Order stepper and WhatsApp messages (/track?lead=… for a past order)"],
-    ["/account", "Sign in (mobile + code), verified business, all orders, new order"],
-    ["/admin", "Back office: Orders, Leads by score, Partner handoff, KYC review queue, Messages, Status"],
-    ["Expo app", "Same steps as the web: Home → Chat → Quote → Consent → KYC → Track, plus 👤 Account"]
+    [
+      "/",
+      "Home: language, Start, demo owners, 👤 account"
+    ],
+    [
+      "/chat",
+      "AI advisor chat with quick-reply chips and the quote card"
+    ],
+    [
+      "/quote",
+      "Quote: lines, add-on switches, contract, Accept"
+    ],
+    [
+      "/consent",
+      "Per-purpose consent (DPDP)"
+    ],
+    [
+      "/kyc",
+      "Documents: camera upload, sample documents, reuse card, Check my documents"
+    ],
+    [
+      "/track",
+      "Order stepper and WhatsApp messages (/track?lead=… for a past order)"
+    ],
+    [
+      "/account",
+      "Sign in (mobile + code), verified business, all orders, new order"
+    ],
+    [
+      "/admin",
+      "Back office: Orders, Leads by score, Partner handoff, KYC review queue, Messages, Status"
+    ],
+    [
+      "Expo app",
+      "Same steps as the web: Home → Chat → Quote → Consent → KYC → Track, plus 👤 Account"
+    ]
   ],
   "issues": [
-    "Machine Monitoring quantity: \"10 machines\" is quoted as 40 devices (staff count). Avoid case A8 on camera until it is fixed.",
     "The LLM's wording changes from run to run. The products and prices above are fixed by the rules for the same facts; if the advisor picks a different product, the price for that product is still rule-based.",
     "In the Expo app, sign-in lasts until the app is closed.",
     "No real SMS: the sign-in code is shown on screen (demo mode)."

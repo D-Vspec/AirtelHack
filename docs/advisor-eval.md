@@ -14,7 +14,7 @@ Each run replaces this file's section for that provider with a results table (27
 
 ## deepseek / deepseek-flash
 
-Run 2026-11-05T16:31:28.992Z: **27/27 conversations pass (100%)**. Per check: noIneligible 27/27, dependencies 27/27, priceMatches 27/27, language 27/27, within6 27/27, expectations 27/27.
+Run 2026-11-05T19:13:36.969Z: **27/27 conversations pass (100%)**. Per check: noIneligible 27/27, dependencies 27/27, priceMatches 27/27, language 27/27, within6 27/27, expectations 27/27.
 
 | id | scenario | language | first quote turn | noIneligible | dependencies | priceMatches | language | within6 | expectations | pass | notes |
 |---|---|---|---|---|---|---|---|---|---|---|---|

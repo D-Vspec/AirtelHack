@@ -181,3 +181,7 @@ Not done: the Expo app keeps the sign-in in memory (AsyncStorage install failed 
 ## Fix: order stuck at "Could not complete" after a KYC retry (2026-11-06)
 Bug: a KYC reject moved the order to failed (final); if the owner then uploaded the right documents and passed, the tracker ignored kyc.passed, so KYC said verified while Track said failed. Now an order failed only for `kyc_rejected` reopens at kyc_passed when KYC later passes (`orders.CanMoveFrom`); every other failure stays final. The tracker also repairs orders already stuck this way at startup (one found and reopened).
 Verified: go test ./... (new TestOnlyAKycRejectionReopens), live K01 reject then K03 pass on one lead moves the order failed -> kyc_passed, smoke.
+
+## Fix: factory quote sized antivirus by machines (2026-11-06)
+Bug: "machine monitoring for 10 machines" filled the shared per-device count, so Endpoint Security (staff PCs) was quoted for 10, or both for 40 on other runs. Now Machine Monitoring (P24) has its own `machines` count; Endpoint Security keeps staff devices. The reply also names products on a longer minimum contract (P24: 24 months) and no longer prints empty "no assumptions / no notes / no alternatives" lines.
+Verified: advisor tests 17/17 (new unit and live test), the owner's exact message 3/3 live runs give P24×10 and P20×40 (₹16,970/mo, ₹40,000 one-time), eval 27/27.

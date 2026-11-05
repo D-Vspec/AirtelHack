@@ -21,7 +21,7 @@ export interface SessionState {
   turn: number;
   history: Turn[];
   profile: BusinessProfile;
-  counts: Partial<Record<"lines" | "cameras" | "devices" | "counters" | "vehicles" | "users", number>>;
+  counts: Partial<Record<"lines" | "cameras" | "devices" | "machines" | "counters" | "vehicles" | "users", number>>;
   language: LanguageName;
   romanised: boolean;
   quote?: Quote;
@@ -73,7 +73,7 @@ export function merge(state: SessionState, ext: AdvisorExtraction, catalogueIds:
   if (typeof p.numSites === "number" && p.numSites < 1) delete p.numSites;
   const interests = new Set([...(state.profile.productsOfInterest ?? []), ...(ext.productsOfInterest ?? [])].filter((id) => catalogueIds.has(id)));
   if (interests.size) p.productsOfInterest = [...interests].sort();
-  for (const k of ["lines", "cameras", "devices", "counters", "vehicles", "users"] as const) {
+  for (const k of ["lines", "cameras", "devices", "machines", "counters", "vehicles", "users"] as const) {
     if (ext[k] && ext[k]! > 0) state.counts[k] = ext[k];
   }
   const parsed = BusinessProfile.safeParse(p);
@@ -109,16 +109,21 @@ async function verifyGstin(state: SessionState, services: Services): Promise<voi
 const COUNT_FOR_UNIT: Record<string, keyof SessionState["counts"]> = {
   "per line": "lines", "per camera": "cameras", "per device": "devices", "per counter": "counters", "per vehicle": "vehicles", "per user": "users",
 };
+// Products whose unit is shared with others but count something else: Machine Monitoring is
+// "per device" like Endpoint Security, yet "10 machines" must not size the staff's antivirus.
+const COUNT_FOR_PRODUCT: Record<string, keyof SessionState["counts"]> = { P24: "machines" };
+const countKey = (productId: string, unit: string) => COUNT_FOR_PRODUCT[productId] ?? COUNT_FOR_UNIT[unit];
 
 /**
  * Quantity for a bundle item the profile cannot determine. Uses what the owner said, else a stated
- * starting point the reply must call out (devices = staff, counters = sites, cameras = 2 per site, else 1).
+ * starting point the reply must call out (devices/users = staff, counters = sites, cameras = 2 per site,
+ * machines = 1 per site, else 1).
  */
-export function proposeQuantity(unit: string, state: SessionState): { quantity: number; assumed: boolean } {
-  const key = COUNT_FOR_UNIT[unit];
+export function proposeQuantity(productId: string, unit: string, state: SessionState): { quantity: number; assumed: boolean } {
+  const key = countKey(productId, unit);
   if (key && state.counts[key]) return { quantity: state.counts[key]!, assumed: false };
   const sites = state.profile.numSites ?? 1;
-  const n = key === "devices" || key === "users" ? state.profile.employeeCount ?? 1 : key === "counters" ? sites : key === "cameras" ? 2 * sites : 1;
+  const n = key === "devices" || key === "users" ? state.profile.employeeCount ?? 1 : key === "counters" || key === "machines" ? sites : key === "cameras" ? 2 * sites : 1;
   return { quantity: n, assumed: true };
 }
 
@@ -249,10 +254,11 @@ async function recommend(state: SessionState, byId: Map<string, Product>, deps: 
   const add = (productId: string, unit: string, quantity: number | null) => {
     if (items.some((i) => i.productId === productId)) return;
     // what the owner said (e.g. "only 5 people need cloud email") beats the staff-count default
-    const said = COUNT_FOR_UNIT[unit] && state.counts[COUNT_FOR_UNIT[unit]!];
+    const key = countKey(productId, unit);
+    const said = key && state.counts[key];
     if (said) { items.push({ productId, quantity: said }); return; }
     if (quantity === null) {
-      const p = proposeQuantity(unit, state);
+      const p = proposeQuantity(productId, unit, state);
       if (p.assumed) assumptions.push(`${byId.get(productId)?.name}: priced for ${p.quantity} (${unit}); owner can change it`);
       items.push({ productId, quantity: p.quantity });
     } else items.push({ productId, quantity });
@@ -280,7 +286,7 @@ async function recommend(state: SessionState, byId: Map<string, Product>, deps: 
     allowedProducts: names(q, excludedInterests, byId, optional.map((o) => o.productName)),
     facts: { ...common, bundle: bundle.name, rationale: bundle.rationale, ...quoteFacts(q), optionalAddOns: optional.map((o) => ({ product: o.productName, why: o.why })),
       notAvailable: exclusionFacts(excludedInterests, byId), assumptions, quoteNotes: q.notes },
-    instructions: "Recommend this bundle. Lead with ONE monthly price (monthlyTotalInr) and the one-time charge separately, then list each product in a few words with why it helps. For every item in notAvailable say plainly why it is not available and offer its alternatives. Mention assumptions and quoteNotes (automatic additions) in one line each. Mention optional add-ons in one line. Say the expected installation time in days. End by asking if they want to go ahead.",
+    instructions: "Recommend this bundle. Lead with ONE monthly price (monthlyTotalInr) and the one-time charge separately, then list each product in a few words with why it helps. For every item in notAvailable say plainly why it is not available and offer its alternatives. Mention assumptions and quoteNotes (automatic additions) in one line each. If a line's contractMonths is longer than the quote's contractMonths, say in one line which product needs the longer contract (that is why its price is lower). Mention optional add-ons in one line. Say the expected installation time in days. End by asking if they want to go ahead. Leave out anything that is empty: never write that there are no assumptions, no notes, no exclusions or no alternatives.",
   };
 }
 

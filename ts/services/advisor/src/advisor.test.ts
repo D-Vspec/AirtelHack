@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import type { AdvisorExtraction } from "@udyam/shared";
-import { ACCESS_LINKS, newSession, runTurn, type Brief, type Llm } from "./advisor.ts";
+import { ACCESS_LINKS, newSession, proposeQuantity, runTurn, type Brief, type Llm } from "./advisor.ts";
 import { checkReply, dominantScript, numbersIn } from "./guard.ts";
 import { handoffSummary } from "./handoff.ts";
 import { httpServices } from "./services.ts";
@@ -87,6 +87,16 @@ test("'only 5 people on cloud' re-quotes email for 5, not the 10 staff", { skip:
   assert.ok(s.quote!.monthlyTotalInr < before.monthlyTotalInr);
 });
 
+test("factory: '10 machines' sizes Machine Monitoring only, not the staff's Endpoint Security", { skip: !live }, async () => {
+  const msg = "auto-parts manufacturer in Pune, 40 staff, one factory, GSTIN, need internet and machine monitoring for 10 machines";
+  const llm = fakeLlm({ [msg]: { segment: "Small manufacturers", businessType: "Auto-parts manufacturer", city: "Pune", employeeCount: 40, numSites: 1, hasGstin: true, productsOfInterest: ["P24"], machines: 10 } });
+  const s = newSession("t-machines");
+  const r = await runTurn(s, msg, { llm, services, emit });
+  assert.equal(r.brief.kind, "recommend");
+  assert.equal(s.quote!.lines.find((l) => l.productId === "P24")?.quantity, 10, "one sensor kit per machine");
+  assert.equal(s.quote!.lines.find((l) => l.productId === "P20")?.quantity, 40, "antivirus for the staff, not the machines");
+});
+
 test("interest in a fibre plan does not add a second access link to the bundle", { skip: !live }, async () => {
   const msg = "physio clinic in Hyderabad, 5 staff, one branch, GSTIN, need reliable internet";
   const llm = fakeLlm({ [msg]: { segment: "Professional offices", businessType: "Physiotherapy clinic", city: "Hyderabad", employeeCount: 5, numSites: 1, hasGstin: true, productsOfInterest: ["P01"] } });
@@ -160,6 +170,18 @@ test("romanised comes from the message script, not the extractor", { skip: !live
   assert.equal(s.romanised, false);
   await runTurn(s, "vanakkam, chennai-la clinic", { llm, services, emit });
   assert.equal(s.romanised, true);
+});
+
+test("proposeQuantity: machines and devices are counted separately", () => {
+  const s = newSession("t-q");
+  s.profile = { employeeCount: 40, numSites: 2 };
+  assert.deepEqual(proposeQuantity("P24", "per device", s), { quantity: 2, assumed: true }, "unknown machines: 1 per site, called out");
+  assert.deepEqual(proposeQuantity("P20", "per device", s), { quantity: 40, assumed: true }, "devices default to staff");
+  s.counts = { machines: 10 };
+  assert.deepEqual(proposeQuantity("P24", "per device", s), { quantity: 10, assumed: false });
+  assert.deepEqual(proposeQuantity("P20", "per device", s), { quantity: 40, assumed: true }, "machines never size Endpoint Security");
+  s.counts = { devices: 12 };
+  assert.deepEqual(proposeQuantity("P24", "per device", s), { quantity: 2, assumed: true }, "PCs never size Machine Monitoring");
 });
 
 test("handoff summary states only captured facts", () => {

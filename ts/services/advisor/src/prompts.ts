@@ -15,7 +15,7 @@ export function extractionPrompt(input: { history: Turn[]; message: string; prof
     "numSites: a single shop, clinic, office or unit ('ek dukaan', 'my shop', 'oru kadai') means numSites 1.",
     "productsOfInterest: map what the owner asks for to these catalogue ids only:",
     input.catalogue.map((p) => `${p.id} ${p.name}`).join("; "),
-    "users: when the owner says only some people need cloud email/office tools ('only 5 people on cloud'), the number of such people. devices/cameras/lines/counters: the counts they ask for, including changes to an earlier quote.",
+    "users: when the owner says only some people need cloud email/office tools ('only 5 people on cloud'), the number of such people. machines: machines or equipment to monitor ('machine monitoring for 10 machines'); never copy it into devices. devices: only PCs, laptops or phones to protect. devices/cameras/lines/counters: the counts they ask for, including changes to an earlier quote.",
     "hasGstin: true if they say they have GST/GSTIN registration, false if they say they do not.",
     "language: the language of the latest message (Hinglish -> Hindi, Tanglish -> Tamil, with romanised=true). English -> English, romanised=false.",
     "intent: mobile_only only if they want just a mobile/SIM plan and nothing else; too_expensive for price objections; accept when they agree to proceed (yes, go ahead, theek hai, sari); out_of_scope for questions unrelated to business telecom/IT (tax filing, loans, weather, cricket); otherwise info.",
