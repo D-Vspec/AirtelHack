@@ -21,7 +21,8 @@ RGB = type(RED)
 MINT, AMBER = RGB(0xEC, 0xFD, 0xF3), RGB(0xFF, 0xF4, 0xD6)
 
 C = json.loads((HERE / "content.json").read_text(encoding="utf-8"))
-OUT = HERE / "Udyam_Digital_Video_Script.pptx"
+import os
+OUT = Path(os.environ["OUT"]) if os.environ.get("OUT") else HERE / "Udyam_Digital_Video_Script.pptx"
 
 
 def table(slide, x, y, w, widths, header, rows, size=8.5, fills=None, row_h=0.3):

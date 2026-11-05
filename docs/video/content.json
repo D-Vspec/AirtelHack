@@ -9,7 +9,7 @@
     "Back office: http://localhost:3000/admin, token demo-admin-token.",
     "Run make scenarios once before recording, so the back office has leads, a review case and partner tasks.",
     "Send one chat message first to warm up the LLM. The first reply of the day is the slowest.",
-    "Open docs/Udyam_Digital_SYNC_Submission.pptx on slide 2, and keep a terminal open in the repo."
+    "Open docs/Udyam_Digital_SYNC_Submission_7slides.pptx on slide 2, and keep a terminal open in the repo."
   ],
   "script": [
     [
@@ -64,7 +64,7 @@
     ],
     [
       "2:40–3:00",
-      "Terminal: make scenarios ends with \"33 passed, 0 failed\". Then deck slide 8, the architecture",
+      "Terminal: make scenarios ends with \"33 passed, 0 failed\". Then deck slide 6, the architecture",
       "Thirty-three user stories pass against the live system, and in our failure drills no event was lost. We start with professional offices, then multi-site businesses and manufacturers. Thank you."
     ]
   ],
@@ -259,7 +259,7 @@
       "K01",
       "Reject",
       "GSTIN cancelled in the registry, and the Udyam number is blank",
-      "Demo owner \"Just a mobile plan\""
+      "Demo owner \"Just a mobile plan\" (a sample to show a rejection, not to pass)"
     ],
     [
       "K02",
@@ -343,7 +343,7 @@
     ],
     [
       "Reject",
-      "Blocked with a clear reason (e.g. GSTIN cancelled) and the next step to take; no order is provisioned."
+      "Blocked with a clear reason (e.g. GSTIN cancelled) and the next step to take; no order is provisioned. If the owner then uploads correct documents (e.g. Use sample documents (K03)) and they pass, the order reopens from KYC failed to KYC verified and carries on."
     ]
   ],
   "reuse": [

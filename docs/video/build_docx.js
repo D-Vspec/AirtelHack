@@ -121,5 +121,5 @@ const doc = new Document({
   }],
 });
 
-const out = path.join(__dirname, "Udyam_Digital_Video_Script.docx");
+const out = process.env.OUT || path.join(__dirname, "Udyam_Digital_Video_Script.docx");
 Packer.toBuffer(doc).then((b) => { fs.writeFileSync(out, b); console.log("wrote", out); });
