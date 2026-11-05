@@ -10,3 +10,4 @@ export * from "./profile";
 export * from "./i18n";
 export * from "./api";
 export * from "./advisor";
+export * from "./account-text";

@@ -3,14 +3,16 @@ import * as ImagePicker from "expo-image-picker";
 import { useEffect, useRef, useState, type ComponentRef, type ReactNode } from "react";
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StatusBar as RNStatusBar, StyleSheet, Text, TextInput, View } from "react-native";
 import {
-  createApiClient, DEMO_OWNERS, inr, KYC_MESSAGES, LANGUAGES, newLeadId, ORDER_STATUS_LABELS, t as translate,
-  type BusinessProfile, type KycApplication, type KycDocumentType, type KycFinding, type LangCode, type Quote, type SentMessage,
-  type StringKey, type Timeline,
+  accountText, createApiClient, DEMO_OWNERS, inr, KYC_MESSAGES, LANGUAGES, newLeadId, ORDER_STATUS_LABELS, REUSE_REASON_TEXT, t as translate,
+  type AccountTextKey, type AccountView, type BusinessProfile, type KycApplication, type KycDocumentType, type KycFinding, type LangCode,
+  type Order, type Quote, type ReuseStatus, type SentMessage, type StringKey, type Timeline,
 } from "@udyam/shared";
 
 // On a physical phone use the computer's LAN IP, e.g. EXPO_PUBLIC_API_URL=http://192.168.1.20:8080/api
 // (or keep localhost and forward the port over USB: adb reverse tcp:8080 tcp:8080).
-const api = createApiClient(process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:8080/api");
+// A signed-in customer's session token (Authorization: Bearer). Kept in memory: signing in lasts until the app is closed.
+let accountToken: string | null = null;
+const api = createApiClient(process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:8080/api", { accountToken: () => accountToken });
 
 // Colour tokens from ts/apps/web/app/globals.css (the red/ink redesign).
 const C = {
@@ -30,22 +32,44 @@ const CHIPS: Partial<Record<LangCode, { ask: string[]; offer: string[] }>> = {
   ta: { ask: ["GSTIN உள்ளது", "ஒரே கிளை", "5 பேர் வேலை செய்கிறார்கள்", "மொபைல் பிளான் மட்டும்"], offer: ["சரி, தொடரலாம்", "விலை அதிகம்", "மொபைல் பிளான் மட்டும்"] },
 };
 
-type Screen = "home" | "chat" | "quote" | "consent" | "kyc" | "track";
+type Screen = "home" | "chat" | "quote" | "consent" | "kyc" | "track" | "account";
 const STEPS: Screen[] = ["chat", "quote", "consent", "kyc", "track"];
-const STEP_KEYS: Record<Screen, StringKey> = { home: "appName", chat: "stepChat", quote: "stepQuote", consent: "stepConsent", kyc: "stepKyc", track: "stepTrack" };
+const STEP_KEYS: Record<Screen, StringKey> = { home: "appName", chat: "stepChat", quote: "stepQuote", consent: "stepConsent", kyc: "stepKyc", track: "stepTrack", account: "appName" };
 
 interface Msg { role: "owner" | "advisor"; text: string }
-interface Journey { lang: LangCode; leadId: string; sessionId?: string; messages: Msg[]; profile: BusinessProfile; quoteId?: string; specimen: string; draft: string }
+// trackLead: a past order opened from the account screen (otherwise Track follows leadId).
+interface Journey { lang: LangCode; leadId: string; sessionId?: string; messages: Msg[]; profile: BusinessProfile; quoteId?: string; specimen: string; draft: string; trackLead?: string }
+interface Account { mobileMasked: string }
+/** A fresh order: new lead ID, empty chat. */
+const freshJourney = (prefix = "mobile", specimen = "K03", draft = ""): Partial<Journey> =>
+  ({ leadId: newLeadId(prefix), sessionId: undefined, messages: [], profile: {}, quoteId: undefined, specimen, draft, trackLead: undefined });
 
 const errText = (e: unknown, fallback: string) => (e as { detail?: string })?.detail || fallback;
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>("home");
+  const [back, setBack] = useState<Screen>("home");
   const [j, setJ] = useState<Journey>({ lang: "en", leadId: "", messages: [], profile: {}, specimen: "K03", draft: "" });
+  const [account, setAccount] = useState<Account | null>(null);
   const t = (k: StringKey, p?: Record<string, string | number>) => translate(j.lang, k, p);
   const update = (patch: Partial<Journey>) => setJ((cur) => ({ ...cur, ...patch }));
-  const props = { j, update, t, go: setScreen };
+  const go = (to: Screen) => {
+    if (to === "account" && screen !== "account") setBack(screen);
+    setScreen(to);
+  };
+  const signIn = (token: string, a: Account) => { accountToken = token; setAccount(a); };
+  const signOut = async () => {
+    try { await api.accounts.logout(); } catch { /* already expired */ }
+    accountToken = null;
+    setAccount(null);
+  };
+  const props = { j, update, t, go, account, signIn, signOut, back };
   const step = STEPS.indexOf(screen);
+
+  // A signed-in owner's orders join their account, so a later order can reuse the verified documents.
+  useEffect(() => {
+    if (account && j.leadId) api.accounts.linkLead(j.leadId).catch(() => { /* another account's order: stays a guest order */ });
+  }, [account, j.leadId]);
 
   return (
     // "padding" on both platforms: with edge-to-edge Android the window no longer resizes for the keyboard.
@@ -55,9 +79,15 @@ export default function App() {
           <View style={s.logo}><Text style={s.logoText}>U</Text></View>
           <Text style={s.brand} numberOfLines={1}>{t("appName")}</Text>
         </Pressable>
-        {screen !== "home" && <View style={s.stepPill}><Text style={s.stepLabel} numberOfLines={1}>{step + 1}/5 · {t(STEP_KEYS[screen])}</Text></View>}
+        <View style={s.headRight}>
+          {step >= 0 && <View style={s.stepPill}><Text style={s.stepLabel} numberOfLines={1}>{step + 1}/5 · {t(STEP_KEYS[screen])}</Text></View>}
+          <Pressable testID="account-link" accessibilityRole="button" accessibilityLabel={accountText(j.lang, "account")} onPress={() => go("account")} style={s.accountBtn}>
+            <Text style={{ fontSize: 16 }}>👤</Text>
+            {account && <View style={s.accountDot} />}
+          </Pressable>
+        </View>
       </View>
-      {screen !== "home" && (
+      {step >= 0 && (
         <View style={s.progress}>{STEPS.map((x, i) => <View key={x} style={[s.bar, i < step && s.barDone, i === step && s.barOn]} />)}</View>
       )}
       {screen === "home" && <Home {...props} />}
@@ -66,12 +96,16 @@ export default function App() {
       {screen === "consent" && <Consent {...props} />}
       {screen === "kyc" && <Kyc {...props} />}
       {screen === "track" && <Track {...props} />}
+      {screen === "account" && <AccountScreen {...props} />}
       <StatusBar style="dark" />
     </KeyboardAvoidingView>
   );
 }
 
-interface P { j: Journey; update: (p: Partial<Journey>) => void; t: (k: StringKey, p?: Record<string, string | number>) => string; go: (s: Screen) => void }
+interface P {
+  j: Journey; update: (p: Partial<Journey>) => void; t: (k: StringKey, p?: Record<string, string | number>) => string; go: (s: Screen) => void;
+  account: Account | null; signIn: (token: string, a: Account) => void; signOut: () => Promise<void>; back: Screen;
+}
 
 function Btn({ title, onPress, disabled, variant = "primary", testID, busy }: { title: string; onPress: () => void; disabled?: boolean; variant?: "primary" | "secondary"; testID?: string; busy?: boolean }) {
   return (
@@ -104,7 +138,7 @@ const AdvisorBubble = ({ text }: { text: string }) => (
 
 function Home({ j, update, t, go }: P) {
   const start = (lang: LangCode, prefix = "mobile", specimen = "K03", draft = "") => {
-    update({ lang, leadId: newLeadId(prefix), sessionId: undefined, messages: [], profile: {}, quoteId: undefined, specimen, draft });
+    update({ lang, ...freshJourney(prefix, specimen, draft) });
     go("chat");
   };
   return (
@@ -300,11 +334,37 @@ function FindingRow({ f, lang }: { f: KycFinding; lang: LangCode }) {
   );
 }
 
-function Kyc({ j, t, go }: P) {
+function Kyc({ j, t, go, update, account }: P) {
   const [have, setHave] = useState<Partial<Record<KycDocumentType, KycFinding[]>>>({});
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<KycApplication | null>(null);
+  // returning customer: reuse the account's earlier verification (go/pkg/kyc ReusePolicy decides)
+  const [reuse, setReuse] = useState<ReuseStatus | null>(null);
+  const [unchanged, setUnchanged] = useState(false);
+  const [refused, setRefused] = useState<string[] | null>(null);
+  const [reuseHidden, setReuseHidden] = useState(false);
+  const A = (k: AccountTextKey) => accountText(j.lang, k);
+
+  useEffect(() => {
+    if (!account || !j.leadId) { setReuse(null); return; }
+    api.accounts.reuseStatus(j.leadId).then(setReuse).catch(() => setReuse(null));
+  }, [account, j.leadId]);
+
+  async function useVerified() {
+    setBusy("reuse");
+    setError(null);
+    try {
+      setResult(await api.accounts.reuse(j.leadId, unchanged));
+      setReuseHidden(true);
+    } catch (e) {
+      const reasons = (e as { body?: { reasons?: string[] } }).body?.reasons;
+      if (reasons) setRefused(reasons);
+      else setError(errText(e, t("error")));
+    } finally {
+      setBusy(null);
+    }
+  }
 
   // Camera capture: rear camera on a phone; the browser build falls back to a file picker.
   async function capture(type: KycDocumentType) {
@@ -355,9 +415,41 @@ function Kyc({ j, t, go }: P) {
     <Page footer={
       <View style={{ gap: 8 }}>
         <Btn testID="check-docs" title={t("checkDocs")} variant={canTrack ? "secondary" : "primary"} disabled={!Object.keys(have).length} busy={busy === "check"} onPress={check} />
-        {canTrack && <Btn testID="go-track" title={`${t("stepTrack")} →`} onPress={() => go("track")} />}
+        {canTrack && <Btn testID="go-track" title={`${t("stepTrack")} →`} onPress={() => { update({ trackLead: undefined }); go("track"); }} />}
       </View>
     }>
+      {reuse?.reusable && reuse.verified && !result && !reuseHidden && (
+        <View testID="reuse-card" style={[s.card, { borderColor: C.mint600, borderWidth: 2 }]}>
+          <Text style={s.h2}>🛡️ {A("reuseTitle")}</Text>
+          <Text style={{ color: C.ink700, lineHeight: 21 }}>{A("reuseBody")}</Text>
+          <View style={s.verifiedBox}>
+            <Text style={{ fontWeight: "700", color: C.ink900 }}>{reuse.verified.tradeName || reuse.verified.legalName} · GSTIN {reuse.verified.gstinMasked}</Text>
+            {!!reuse.verified.address && <Text style={s.small}>{reuse.verified.address}</Text>}
+            <Text style={s.small}>{A("verifiedOn")} {new Date(reuse.verified.verifiedAt).toLocaleDateString()}</Text>
+          </View>
+          <Pressable testID="unchanged" accessibilityRole="checkbox" accessibilityState={{ checked: unchanged }} onPress={() => setUnchanged((u) => !u)} style={s.checkRow}>
+            <View style={[s.checkBox, !unchanged && s.checkBoxOff]}>{unchanged && <Text style={s.checkMark}>✓</Text>}</View>
+            <Text style={{ flex: 1, color: C.ink900 }}>{A("unchanged")}</Text>
+          </Pressable>
+          {refused && (
+            <View style={s.finding}>
+              <Text style={{ fontWeight: "600", color: C.ink900 }}>{A("reuseNotPossible")}</Text>
+              {refused.map((r) => <Text key={r} style={s.small}>• {REUSE_REASON_TEXT[r as keyof typeof REUSE_REASON_TEXT] ?? r}</Text>)}
+            </View>
+          )}
+          <Btn testID="reuse-kyc" title={`✓ ${A("reuseButton")}`} disabled={!unchanged || (!!busy && busy !== "reuse")} busy={busy === "reuse"} onPress={useVerified} />
+          <Pressable onPress={() => setReuseHidden(true)}><Text style={s.link}>{A("somethingChanged")}</Text></Pressable>
+        </View>
+      )}
+      {reuse && !reuse.reusable && reuse.verified && !result && (
+        <View style={s.finding}>
+          <Text style={{ fontWeight: "600", color: C.ink900 }}>{A("reuseNotPossible")}</Text>
+          {reuse.reasons.map((r) => <Text key={r} style={s.small}>• {REUSE_REASON_TEXT[r]}</Text>)}
+        </View>
+      )}
+      {!account && !result && (
+        <Pressable testID="sign-in-to-skip" onPress={() => go("account")}><Text style={s.link}>👤 {A("signInToSkip")}</Text></Pressable>
+      )}
       {DOCS.map(({ type, label }) => (
         <Card key={type}>
           <View style={s.row}>
@@ -385,19 +477,22 @@ function Kyc({ j, t, go }: P) {
 function Track({ j, t }: P) {
   const [tl, setTl] = useState<Timeline | null>(null);
   const [msgs, setMsgs] = useState<SentMessage[]>([]);
+  const lead = j.trackLead ?? j.leadId;
   useEffect(() => {
     let stop = false;
+    setTl(null);
+    setMsgs([]);
     const poll = async () => {
       try {
-        const { orders } = await api.tracker.orders({ leadId: j.leadId });
+        const { orders } = await api.tracker.orders({ leadId: lead });
         if (orders[0]) setTl(await api.tracker.timeline(orders[0].id));
-        setMsgs((await api.notify.messages(j.leadId)).messages);
+        setMsgs((await api.notify.messages(lead)).messages);
       } catch { /* retry next tick */ }
       if (!stop) setTimeout(poll, 3000);
     };
     void poll();
     return () => { stop = true; };
-  }, [j.leadId]);
+  }, [lead]);
 
   const labels = ORDER_STATUS_LABELS[j.lang];
   const o = tl?.order;
@@ -442,7 +537,187 @@ function Track({ j, t }: P) {
   );
 }
 
+interface Row { leadId: string; reusedKyc: boolean; order: Order | null }
+const NEEDS_KYC = new Set(["quote_accepted", "kyc_pending"]);
+const digits = (v: string) => v.replace(/\D/g, "");
+
+/** Customer account: sign in with mobile + one-time code, every past order with tracking, new order (same API as the web /account). */
+function AccountScreen({ j, update, t, go, account, signIn, signOut, back }: P) {
+  const A = (k: AccountTextKey) => accountText(j.lang, k);
+  const [mobile, setMobile] = useState("");
+  const [code, setCode] = useState("");
+  const [sent, setSent] = useState<{ mobileMasked: string; demoCode?: string } | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [view, setView] = useState<AccountView | null>(null);
+  const [rows, setRows] = useState<Row[] | null>(null);
+
+  useEffect(() => {
+    if (!account) { setView(null); setRows(null); return; }
+    let live = true;
+    (async () => {
+      try {
+        const v = await api.accounts.me();
+        const r = await Promise.all(v.leads.map(async (l) => {
+          const { orders } = await api.tracker.orders({ leadId: l.leadId }).catch(() => ({ orders: [] as Order[] }));
+          return { leadId: l.leadId, reusedKyc: l.reusedKyc, order: orders[0] ?? null };
+        }));
+        if (live) { setView(v); setRows(r); }
+      } catch (e) {
+        if ((e as { status?: number }).status === 401) await signOut();
+        else if (live) setError(errText(e, t("error")));
+      }
+    })();
+    return () => { live = false; };
+  }, [account]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function sendCode() {
+    setBusy(true);
+    setError(null);
+    try {
+      setSent(await api.accounts.requestCode(digits(mobile)));
+    } catch (e) {
+      setError(errText(e, t("error")));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function verify() {
+    setBusy(true);
+    setError(null);
+    try {
+      // the order in progress (if any) joins the account
+      const r = await api.accounts.verify({ mobile: digits(mobile), code, leadId: j.leadId || undefined });
+      signIn(r.token, { mobileMasked: r.account.mobileMasked });
+      setSent(null);
+      setCode("");
+    } catch (e) {
+      setError(errText(e, t("error")));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const STATUS = ORDER_STATUS_LABELS[j.lang];
+  const orders = (rows ?? []).filter((r) => r.order);
+  return (
+    <Page footer={account && <Btn testID="new-order" title={`${A("newOrder")} →`} onPress={() => { update(freshJourney()); go("chat"); }} />}>
+      <Pressable onPress={() => go(back === "account" ? "home" : back)}><Text style={s.link}>← {A("back")}</Text></Pressable>
+      <Text style={s.title}>{A("account")}</Text>
+
+      {!account && (
+        <Card>
+          <Text style={s.h2}>👤 {A("signInTitle")}</Text>
+          <Text style={{ color: C.ink700, lineHeight: 21 }}>{A("signInBody")}</Text>
+          {!sent ? (
+            <>
+              <Text style={s.label}>{A("mobile")}</Text>
+              <View style={s.field}>
+                <Text style={{ color: C.ink500, fontSize: 16 }}>+91</Text>
+                <TextInput testID="mobile" value={mobile} onChangeText={(v) => setMobile(v.replace(/[^0-9 ]/g, ""))} keyboardType="phone-pad"
+                  autoComplete="tel" maxLength={12} placeholder="98765 43210" placeholderTextColor={C.ink500} style={s.fieldInput} />
+              </View>
+              <Btn testID="send-code" title={A("sendCode")} busy={busy} disabled={digits(mobile).length !== 10} onPress={sendCode} />
+            </>
+          ) : (
+            <>
+              {sent.demoCode && (
+                <View style={s.infoBox}><Text style={{ color: C.ink900 }}>{A("demoCode")} <Text testID="demo-code" style={s.code}>{sent.demoCode}</Text></Text></View>
+              )}
+              <Text style={s.label}>{A("code")} · +91 {sent.mobileMasked}</Text>
+              <TextInput testID="otp" value={code} onChangeText={(v) => setCode(digits(v))} keyboardType="number-pad" autoComplete="sms-otp"
+                maxLength={6} style={[s.field, s.otp]} />
+              <Btn testID="sign-in" title={A("signIn")} busy={busy} disabled={code.length !== 6} onPress={verify} />
+              <Pressable onPress={() => { setSent(null); setCode(""); }}><Text style={s.link}>{A("changeNumber")}</Text></Pressable>
+            </>
+          )}
+        </Card>
+      )}
+
+      <ErrorBox text={error} />
+
+      {account && (
+        <>
+          <Card>
+            <View style={s.row}>
+              <Text style={{ flex: 1, color: C.ink900 }}>👤 {A("signedInAs")} <Text testID="signed-in" style={{ fontWeight: "700" }}>+91 {account.mobileMasked}</Text></Text>
+              <Pressable testID="sign-out" onPress={() => void signOut()}><Text style={s.link}>{A("signOut")}</Text></Pressable>
+            </View>
+          </Card>
+
+          <Card>
+            <Text style={s.h2}>🛡️ {A("verified")}</Text>
+            {!view && <ActivityIndicator color={C.brand600} />}
+            {view && !view.verified && <Text style={{ color: C.ink700 }}>{A("notVerified")}</Text>}
+            {view?.verified && (
+              <View testID="verified-business" style={{ gap: 2 }}>
+                <Text style={{ fontWeight: "700", fontSize: 16, color: C.ink900 }}>{view.verified.tradeName || view.verified.legalName}</Text>
+                {!!view.verified.legalName && <Text style={s.small}>{view.verified.legalName}</Text>}
+                {!!view.verified.address && <Text style={s.small}>{view.verified.address}</Text>}
+                <View style={s.pills}>
+                  <View style={s.pillMint}><Text style={s.pillMintText}>✓ GSTIN {view.verified.gstinMasked}</Text></View>
+                  <View style={s.pillInk}><Text style={s.pillInkText}>{A("verifiedOn")} {new Date(view.verified.verifiedAt).toLocaleDateString()}</Text></View>
+                </View>
+              </View>
+            )}
+          </Card>
+
+          <View style={[s.card, s.flush]}>
+            <Text style={[s.h2, { paddingHorizontal: 16, paddingTop: 14 }]}>🚚 {A("orders")}</Text>
+            {!rows && <ActivityIndicator style={{ padding: 16 }} color={C.brand600} />}
+            {rows && orders.length === 0 && <Text style={{ color: C.ink700, padding: 16, paddingTop: 4 }}>{A("noOrders")}</Text>}
+            {orders.map(({ leadId, order, reusedKyc }) => {
+              const o = order!;
+              const done = o.status === "activated";
+              return (
+                <View key={leadId} testID="order-row" style={s.orderRow}>
+                  <View style={s.pills}>
+                    <Text style={{ fontWeight: "700", color: C.ink900 }}>#{o.id.replace(/-/g, "").slice(0, 8).toUpperCase()}</Text>
+                    <View style={done ? s.pillMint : s.pillInk}><Text style={done ? s.pillMintText : s.pillInkText}>{STATUS[o.status] ?? o.status}</Text></View>
+                    {leadId === j.leadId && <View style={s.pillBrand}><Text style={s.pillBrandText}>{A("current")}</Text></View>}
+                    {reusedKyc && <View style={s.pillInk}><Text style={s.pillInkText}>{A("reusedKyc")}</Text></View>}
+                  </View>
+                  <Text style={s.small} numberOfLines={1}>{o.lines.map((l) => l.productName).join(" · ")}</Text>
+                  <Text style={{ color: C.ink700, fontSize: 13 }}>{inr(o.monthlyTotalInr)} {t("perMonth")} · {new Date(o.createdAt).toLocaleDateString()}</Text>
+                  <View style={{ flexDirection: "row", gap: 8, marginTop: 6 }}>
+                    {NEEDS_KYC.has(o.status) && (
+                      <View style={{ flex: 1 }}>
+                        <Btn testID="finish-kyc" title={A("finishKyc")} onPress={() => { update({ leadId, trackLead: undefined }); go("kyc"); }} />
+                      </View>
+                    )}
+                    <View style={{ flex: 1 }}>
+                      <Btn testID="track-order" variant="secondary" title={`${A("track")} →`} onPress={() => { update({ trackLead: leadId }); go("track"); }} />
+                    </View>
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+        </>
+      )}
+    </Page>
+  );
+}
+
 const s = StyleSheet.create({
+  headRight: { flexDirection: "row", alignItems: "center", gap: 8, flexShrink: 1 },
+  accountBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: C.ink50, borderWidth: 1, borderColor: C.ink100, alignItems: "center", justifyContent: "center" },
+  accountDot: { position: "absolute", top: 0, right: 0, width: 11, height: 11, borderRadius: 6, backgroundColor: C.mint600, borderWidth: 2, borderColor: C.white },
+  title: { fontSize: 24, fontWeight: "800", color: C.ink900 },
+  link: { color: C.ink500, textDecorationLine: "underline", fontSize: 14, paddingVertical: 4 },
+  label: { fontWeight: "600", color: C.ink900, marginTop: 6 },
+  field: { flexDirection: "row", alignItems: "center", gap: 6, minHeight: 50, borderRadius: 14, backgroundColor: C.ink50, borderWidth: 1, borderColor: C.ink200, paddingHorizontal: 14 },
+  fieldInput: { flex: 1, minHeight: 48, fontSize: 17, letterSpacing: 1, color: C.ink900 },
+  otp: { fontSize: 22, letterSpacing: 8, fontWeight: "700", color: C.ink900, textAlign: "center" },
+  code: { fontWeight: "800", letterSpacing: 3, fontSize: 16 },
+  infoBox: { backgroundColor: C.brand50, borderRadius: 14, padding: 12, borderWidth: 1, borderColor: C.brand100 },
+  verifiedBox: { backgroundColor: C.mint50, borderRadius: 14, padding: 12, gap: 2 },
+  checkBoxOff: { backgroundColor: C.white, borderWidth: 2, borderColor: C.ink200 },
+  orderRow: { borderTopWidth: 1, borderTopColor: C.ink100, padding: 16, gap: 4 },
+  pills: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 6 },
+  pillInk: { backgroundColor: C.ink100, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3 },
+  pillInkText: { color: C.ink700, fontSize: 12, fontWeight: "600" },
   header: { paddingTop: TOP_INSET + 10, paddingHorizontal: 16, paddingBottom: 10, backgroundColor: C.white, flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 8 },
   brandRow: { flexDirection: "row", alignItems: "center", gap: 8, flexShrink: 1 },
   logo: { width: 30, height: 30, borderRadius: 10, backgroundColor: C.brand600, alignItems: "center", justifyContent: "center" },

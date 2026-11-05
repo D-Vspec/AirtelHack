@@ -171,4 +171,9 @@ Cut / risks:
 ## Returning customers (2026-11-05)
 Added: customer accounts in the kyc service (mobile + one-time code; demo shows the code on screen, `KYC_DEMO_OTP`), `/account` page with every past order and tracking (`/track?lead=`), "Start a new order", and KYC reuse: `go/pkg/kyc` ReusePolicy re-checks the GST and Udyam registries, signatory ID validity and age (365 days) and needs the owner's "nothing changed" confirmation; anything else runs the full pipeline. `kyc.passed` gains `decidedBy: reuse`. Advisor: owner-stated user counts ("only 5 people on the cloud") re-quote at once.
 Verified: go test ./..., advisor tests 15/15 and eval 27/27 (DeepSeek), smoke, web E2E (phone), mobile E2E, new `make account-e2e` (sign in, track a past order, new order verified without uploads).
-Not done: account screens in the Expo app; real SMS for the code; account deletion endpoint.
+Not done: real SMS for the code; account deletion endpoint.
+
+## Returning customers in the Expo app (2026-11-05)
+Added: header account button, sign-in (mobile + code), verified business, every past order with Track and "Finish verification", "Start a new order", and the KYC reuse card, all on the same kyc account API as the web. Account text moved to `@udyam/shared` (`accountText`) so web and mobile use the same words. Fixed a storage race in `e2e-account.mjs` (the page could overwrite the test's journey while hydrating).
+Verified: mobile/web/shared typecheck, new `make mobile-account-e2e` (Expo web build: sign in, track a past order, new order verified without uploads), mobile E2E, web account E2E 5/5, smoke.
+Not done: the Expo app keeps the sign-in in memory (AsyncStorage install failed under the running Metro), so closing the app signs the owner out.

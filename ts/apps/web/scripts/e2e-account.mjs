@@ -36,6 +36,16 @@ async function order(leadId) {
 }
 
 const journey = (leadId) => JSON.stringify({ lang: "en", leadId, messages: [], profile, consented: true });
+/** Put the order in progress in the browser, once the page has stopped saving its own (it may still be hydrating). */
+async function setJourney(page, leadId) {
+  await page.waitForLoadState("networkidle");
+  for (let i = 0; i < 10; i++) {
+    await page.evaluate((j) => localStorage.setItem("udyam.journey.v1", j), journey(leadId));
+    await page.waitForTimeout(300);
+    if (await page.evaluate(() => JSON.parse(localStorage.getItem("udyam.journey.v1")).leadId) === leadId) return;
+  }
+  throw new Error("the page kept replacing the journey");
+}
 const run = Date.now().toString(36);
 const lead1 = `e2e-acct-${run}-1`;
 const mobile = "9" + String(Date.now()).slice(-9);
@@ -53,7 +63,7 @@ try {
 
   // 2. sign in; the order in progress joins the account
   await page.goto(WEB);
-  await page.evaluate((j) => localStorage.setItem("udyam.journey.v1", j), journey(lead1));
+  await setJourney(page, lead1);
   await page.goto(WEB + "/account");
   await page.getByTestId("mobile").fill(mobile);
   await page.getByTestId("send-code").click();
@@ -79,7 +89,7 @@ try {
   if (lead2 === lead1) throw new Error("new order kept the old lead");
   await page.waitForTimeout(800); // the journey links the lead to the account
   await order(lead2); // stands in for chat + quote accept + consent
-  await page.evaluate((j) => localStorage.setItem("udyam.journey.v1", j), journey(lead2));
+  await setJourney(page, lead2);
   await page.goto(WEB + "/kyc");
   await page.getByTestId("reuse-card").waitFor({ timeout: 15_000 });
   await page.screenshot({ path: `${OUT}/phone-09-kyc-reuse.png`, fullPage: true });
