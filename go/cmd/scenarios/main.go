@@ -841,7 +841,7 @@ var notBuilt = []struct{ story, title, why string }{
 	{"#14", "Signatory not available: e-sign link to the signatory", "no e-sign/DigiLocker integration (organisers to confirm a mock is allowed)"},
 	{"#22", "Partner onboards a customer on a tablet, partner credited", "the web journey works on a tablet, but there is no partner login or attribution"},
 	{"#24", "Locked in with another provider: contract end date and reminder", "not captured by the advisor; no reminder scheduler"},
-	{"#25", "Wrong-number leads: OTP at entry", "no SMS gateway; OTP not built"},
+	{"#25", "Wrong-number leads: OTP at entry", "OTP sign-in exists for returning owners (demo code), but not at first entry; no SMS gateway"},
 }
 
 func main() {
